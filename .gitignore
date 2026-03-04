@@ -1,0 +1,13 @@
+# Backend
+backend/build/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# IDE and system
+.idea/
+.vscode/
+*.swp
+*.log
+.DS_Store

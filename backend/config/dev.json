@@ -1,0 +1,32 @@
+{
+  "listeners": [
+    {
+      "address": "0.0.0.0",
+      "port": 5555,
+      "https": false
+    }
+  ],
+  "db_clients": [
+    {
+      "name": "default",
+      "rdbms": "mysql",
+      "host": "127.0.0.1",
+      "port": 3306,
+      "dbname": "graduate_match",
+      "user": "root",
+      "passwd": "123456",
+      "is_fast": false,
+      "number_of_connections": 2,
+      "client_encoding": "utf8mb4"
+    }
+  ],
+  "app": {
+    "number_of_threads": 1,
+    "document_root": "./",
+    "use_implicit_page": true,
+    "log": {
+      "log_level": "INFO",
+      "display_local_time": true
+    }
+  }
+}
