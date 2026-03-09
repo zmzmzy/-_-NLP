@@ -1,10 +1,8 @@
 USE graduate_match;
 
--- Admin user (default password: admin123)
--- hash format: sha256:<hex>
-INSERT INTO users (username, password_hash, role)
-VALUES ('admin', 'sha256:240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin')
-ON DUPLICATE KEY UPDATE role = VALUES(role), password_hash = VALUES(password_hash);
+-- No default users are created in seed_minimal.sql.
+-- Please register an account through /api/auth/register,
+-- then promote one account to admin manually if needed.
 
 -- Colleges (12 samples)
 INSERT INTO colleges (code, name, description) VALUES
@@ -23,28 +21,28 @@ INSERT INTO colleges (code, name, description) VALUES
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
 -- Majors (sample starter set, extend to your final dataset)
-INSERT INTO majors (college_id, code, name, education_level, discipline_category, description)
-SELECT c.id, 'M001', 'Software Engineering', 'bachelor', 'Engineering', 'Software lifecycle, architecture, and engineering practice'
+INSERT INTO majors (college_id, code, name, description)
+SELECT c.id, 'M001', 'Software Engineering', 'Software lifecycle, architecture, and engineering practice'
 FROM colleges c WHERE c.code = 'C01'
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
-INSERT INTO majors (college_id, code, name, education_level, discipline_category, description)
-SELECT c.id, 'M002', 'Data Science', 'bachelor', 'Science', 'Data analysis, machine learning, and data systems'
+INSERT INTO majors (college_id, code, name, description)
+SELECT c.id, 'M002', 'Data Science', 'Data analysis, machine learning, and data systems'
 FROM colleges c WHERE c.code = 'C11'
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
-INSERT INTO majors (college_id, code, name, education_level, discipline_category, description)
-SELECT c.id, 'M003', 'Electronic Information Engineering', 'bachelor', 'Engineering', 'Signals, circuits, embedded systems, communication'
+INSERT INTO majors (college_id, code, name, description)
+SELECT c.id, 'M003', 'Electronic Information Engineering', 'Signals, circuits, embedded systems, communication'
 FROM colleges c WHERE c.code = 'C02'
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
-INSERT INTO majors (college_id, code, name, education_level, discipline_category, description)
-SELECT c.id, 'M004', 'Mechanical Engineering', 'bachelor', 'Engineering', 'Mechanical design, manufacturing, automation basics'
+INSERT INTO majors (college_id, code, name, description)
+SELECT c.id, 'M004', 'Mechanical Engineering', 'Mechanical design, manufacturing, automation basics'
 FROM colleges c WHERE c.code = 'C03'
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
-INSERT INTO majors (college_id, code, name, education_level, discipline_category, description)
-SELECT c.id, 'M005', 'Marketing', 'bachelor', 'Management', 'Marketing strategy, consumer behavior, digital marketing'
+INSERT INTO majors (college_id, code, name, description)
+SELECT c.id, 'M005', 'Marketing', 'Marketing strategy, consumer behavior, digital marketing'
 FROM colleges c WHERE c.code = 'C05'
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 

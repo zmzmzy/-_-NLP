@@ -23,16 +23,8 @@ TRUNCATE TABLE colleges;
 TRUNCATE TABLE system_logs;
 SET FOREIGN_KEY_CHECKS = 1;
 
--- 默认账号
-INSERT INTO users (username, password_hash, role, is_active)
-VALUES
-  ('admin', 'sha256:240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin', 1),
-  ('teacher1', 'sha256:240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'teacher', 1),
-  ('viewer1', 'sha256:240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'viewer', 1)
-ON DUPLICATE KEY UPDATE
-  password_hash = VALUES(password_hash),
-  role = VALUES(role),
-  is_active = VALUES(is_active);
+-- 不再写入默认账号。
+-- 请先通过 /api/auth/register 注册账号，再手动将一个账号提升为 admin。
 
 -- 12 个学院
 INSERT INTO colleges (code, name, description) VALUES
@@ -50,11 +42,11 @@ INSERT INTO colleges (code, name, description) VALUES
 ('C12', '教育学院', '覆盖教育技术、课程设计与儿童发展方向');
 
 -- 24 个专业（20+）
-INSERT INTO majors (college_id, code, name, education_level, discipline_category, description)
-SELECT c.id, x.code, x.name, x.education_level, x.discipline_category, x.description
+INSERT INTO majors (college_id, code, name, description)
+SELECT c.id, x.code, x.name, x.description
 FROM colleges c
 JOIN (
-  SELECT 'C01' AS college_code, 'M001' AS code, '软件工程' AS name, 'bachelor' AS education_level, '工学' AS discipline_category,
+  SELECT 'C01' AS college_code, 'M001' AS code, '软件工程' AS name, 'bachelor' AS legacy_tag, '工学' AS discipline_category,
          '面向复杂软件系统开发、测试、运维与项目协同能力培养' AS description
   UNION ALL SELECT 'C01', 'M002', '计算机科学与技术', 'bachelor', '工学', '面向计算机系统、算法设计与工程实现能力培养'
   UNION ALL SELECT 'C01', 'M003', '网络工程', 'bachelor', '工学', '面向网络架构、安全防护与运维优化能力培养'
@@ -211,7 +203,7 @@ INSERT INTO companies (
 INSERT INTO jobs (
   company_id, title, job_type, location_province, location_city, min_degree,
   salary_range, responsibilities_text, technical_projects_text,
-  required_knowledge_skills_text, required_tools_platform_text, status, published_at
+  required_knowledge_skills_text, required_tools_platform_text, published_at
 )
 SELECT c.id,
        j.title,
@@ -224,7 +216,6 @@ SELECT c.id,
        j.technical_projects_text,
        j.required_knowledge_skills_text,
        j.required_tools_platform_text,
-       j.status,
        NOW()
 FROM companies c
 JOIN (

@@ -2,12 +2,12 @@
   <section class="login-page">
     <div class="login-card">
       <h2>系统登录</h2>
-      <p class="hint">请输入管理员账号，进入毕业设计系统。</p>
+      <p class="hint">支持用户名或邮箱登录。</p>
 
       <form @submit.prevent="submitLogin">
         <label>
-          用户名
-          <input v-model.trim="form.username" type="text" placeholder="请输入用户名" />
+          账号（用户名 / 邮箱）
+          <input v-model.trim="form.account" type="text" placeholder="请输入用户名或邮箱" />
         </label>
 
         <label>
@@ -21,6 +21,12 @@
           {{ loading ? "登录中..." : "登录" }}
         </button>
       </form>
+
+      <p class="links">
+        <router-link to="/register">注册账号</router-link>
+        <span>|</span>
+        <router-link to="/password">找回密码</router-link>
+      </p>
     </div>
   </section>
 </template>
@@ -35,8 +41,8 @@ const route = useRoute();
 const authStore = useAuthStore();
 
 const form = reactive({
-  username: "admin",
-  password: "admin123"
+  account: "",
+  password: ""
 });
 
 const loading = ref(false);
@@ -44,18 +50,18 @@ const errorText = ref("");
 
 async function submitLogin() {
   errorText.value = "";
-  if (!form.username || !form.password) {
-    errorText.value = "用户名和密码不能为空";
+  if (!form.account || !form.password) {
+    errorText.value = "账号和密码不能为空";
     return;
   }
 
   loading.value = true;
   try {
-    await authStore.login(form.username, form.password);
+    await authStore.login(form.account, form.password);
     const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/";
     router.replace(redirect);
   } catch (err) {
-    errorText.value = err?.response?.data?.error || "登录失败，请检查账号密码";
+    errorText.value = err?.response?.data?.error || "登录失败，请检查账号";
   } finally {
     loading.value = false;
   }
@@ -125,5 +131,18 @@ button:disabled {
   margin: 0;
   color: #b42318;
   font-size: 13px;
+}
+
+.links {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #344054;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.links a {
+  color: #0d2b45;
 }
 </style>

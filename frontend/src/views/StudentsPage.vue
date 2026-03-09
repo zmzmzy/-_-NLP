@@ -78,7 +78,7 @@
       <table>
         <thead>
           <tr>
-            <th>ID</th>
+            <th>序号</th>
             <th>学号</th>
             <th>姓名</th>
             <th>专业</th>
@@ -87,8 +87,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in students" :key="item.id">
-            <td>{{ item.id }}</td>
+          <tr v-for="(item, index) in students" :key="item.id">
+            <td>{{ index + 1 }}</td>
             <td>{{ item.student_no }}</td>
             <td>{{ item.full_name }}</td>
             <td>{{ item.major_name }}</td>
@@ -171,7 +171,7 @@
       <table>
         <thead>
           <tr>
-            <th>ID</th>
+            <th>序号</th>
             <th>学生</th>
             <th>企业</th>
             <th>岗位</th>
@@ -181,8 +181,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in employments" :key="item.id">
-            <td>{{ item.id }}</td>
+          <tr v-for="(item, index) in employments" :key="item.id">
+            <td>{{ index + 1 }}</td>
             <td>{{ item.student_name }}</td>
             <td>{{ item.company_name }}</td>
             <td>{{ item.job_title }}</td>

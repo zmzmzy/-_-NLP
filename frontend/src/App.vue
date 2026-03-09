@@ -2,19 +2,21 @@
   <div class="layout">
     <header v-if="showTopbar" class="topbar">
       <div class="brand">
-        <h1>高校就业与人岗匹配系统 v0.1</h1>
+        <h1>高校专业与社会岗位匹配系统 v0.4</h1>
         <p>毕业设计演示版</p>
       </div>
       <div class="right-area">
         <nav>
-          <router-link to="/">决策看板</router-link>
-          <router-link to="/majors">专业管理</router-link>
-          <router-link to="/jobs">岗位管理</router-link>
-          <router-link to="/students">学生就业</router-link>
-          <router-link to="/match">匹配分析</router-link>
+          <template v-if="!isViewer">
+            <router-link to="/majors">专业中心</router-link>
+            <router-link to="/jobs">岗位中心</router-link>
+            <router-link to="/match">匹配分析</router-link>
+            <router-link to="/dashboard">决策看板</router-link>
+          </template>
+          <router-link to="/profile">{{ isAdmin ? "审核中心" : "个人主页" }}</router-link>
         </nav>
         <div class="user-box">
-          <span class="username">用户：{{ username }}</span>
+          <span class="username">用户：{{ username }}（{{ roleLabel }}）</span>
           <button :disabled="logoutLoading" @click="handleLogout">
             {{ logoutLoading ? "退出中..." : "退出登录" }}
           </button>
@@ -37,8 +39,20 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const logoutLoading = ref(false);
-const showTopbar = computed(() => route.name !== "login");
+const showTopbar = computed(() => !["login", "register", "password"].includes(String(route.name || "")));
 const username = computed(() => authStore.user?.username || "未登录");
+const role = computed(() => authStore.user?.role || "viewer");
+const isViewer = computed(() => role.value === "viewer");
+const isAdmin = computed(() => role.value === "admin");
+const roleLabel = computed(() => {
+  if (role.value === "admin") {
+    return "管理员";
+  }
+  if (role.value === "teacher") {
+    return "教师";
+  }
+  return "普通用户";
+});
 
 async function handleLogout() {
   logoutLoading.value = true;

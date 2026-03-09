@@ -8,43 +8,61 @@
     <p v-if="errorText" class="error">{{ errorText }}</p>
     <p v-if="successText" class="success">{{ successText }}</p>
 
-    <div class="panel form-panel">
-      <h3>筛选条件</h3>
-      <div class="grid">
-        <label>
-          毕业年份（可选）
-          <input v-model.number="filters.graduation_year" type="number" min="0" placeholder="如 2026" />
-        </label>
-        <label>
-          算法版本（可选）
-          <input v-model.trim="filters.algorithm_version" placeholder="如 v0.1-baseline" />
-        </label>
-        <label>
-          对口阈值（0-100）
-          <input v-model.number="filters.alignment_threshold" type="number" min="0" max="100" step="0.1" />
-        </label>
-        <label>
-          最少学生数
-          <input v-model.number="filters.min_students" type="number" min="0" />
-        </label>
-        <label>
-          缺口 Top N（1-20）
-          <input v-model.number="filters.top_n" type="number" min="1" max="20" />
-        </label>
-        <label>
-          缺口最小出现次数
-          <input v-model.number="filters.min_gap_count" type="number" min="1" />
-        </label>
+    <details class="panel form-panel collapsible-panel">
+      <summary class="panel-summary">筛选条件</summary>
+      <div class="panel-body">
+        <div class="grid">
+          <label>
+            算法版本（可选）
+            <input v-model.trim="filters.algorithm_version" placeholder="如 v0.1-baseline" />
+          </label>
+          <label>
+            对口阈值（0-100）
+            <input v-model.number="filters.alignment_threshold" type="number" min="0" max="100" step="0.1" />
+          </label>
+          <label>
+            最少学生数
+            <input v-model.number="filters.min_students" type="number" min="0" />
+          </label>
+          <label>
+            排序口径
+            <select v-model="filters.ranking_metric">
+              <option value="excellent_graduate_score">优秀毕业分</option>
+              <option value="alignment_rate">对口率</option>
+              <option value="weighted_avg_match_score">加权平均分</option>
+              <option value="avg_match_score">平均分</option>
+              <option value="employment_rate">就业率</option>
+            </select>
+          </label>
+          <label>
+            平滑参数 k
+            <input v-model.number="filters.smoothing_k" type="number" min="1" />
+          </label>
+          <label>
+            缺口 Top N（1-20）
+            <input v-model.number="filters.top_n" type="number" min="1" max="20" />
+          </label>
+          <label>
+            缺口最小出现次数
+            <input v-model.number="filters.min_gap_count" type="number" min="1" />
+          </label>
+        </div>
+        <div class="actions">
+          <button :disabled="loading" @click="loadDashboard">
+            {{ loading ? "加载中..." : "刷新看板" }}
+          </button>
+          <button class="secondary" :disabled="loading" @click="resetFilters">
+            重置筛选
+          </button>
+        </div>
+        <p class="meta-hint">
+          当前对口分析配置：算法 {{ alignmentMeta.algorithm_version || "latest" }}，阈值
+          {{ Number(alignmentMeta.alignment_threshold || filters.alignment_threshold).toFixed(1) }}，
+          最少学生 {{ alignmentMeta.min_students ?? filters.min_students }}，平滑 k
+          {{ alignmentMeta.smoothing_k ?? filters.smoothing_k }}
+        </p>
       </div>
-      <div class="actions">
-        <button :disabled="loading" @click="loadDashboard">
-          {{ loading ? "加载中..." : "刷新看板" }}
-        </button>
-        <button class="secondary" :disabled="loading" @click="resetFilters">
-          重置筛选
-        </button>
-      </div>
-    </div>
+    </details>
 
     <div class="cards">
       <article class="card">
@@ -68,16 +86,29 @@
         <p class="value">{{ formatRate(overallAlignmentRate) }}</p>
       </article>
       <article class="card">
+        <h3>总体覆盖率</h3>
+        <p class="value">{{ formatRate(overallCoverageRate) }}</p>
+      </article>
+      <article class="card">
         <h3>加权平均匹配分</h3>
         <p class="value">{{ formatScore(weightedAverageScore) }}</p>
+      </article>
+      <article class="card">
+        <h3>专业原始分</h3>
+        <p class="value">{{ formatScore(overallRawScore) }}</p>
+      </article>
+      <article class="card">
+        <h3>专业优秀毕业分</h3>
+        <p class="value">{{ formatScore(overallExcellentScore) }}</p>
       </article>
     </div>
 
     <div class="panel">
-      <h3>专业对口率明细</h3>
+      <h3>专业毕业表现排名</h3>
       <table>
         <thead>
           <tr>
+            <th>排名</th>
             <th>专业</th>
             <th>学院</th>
             <th>学生数</th>
@@ -85,12 +116,19 @@
             <th>有匹配结果</th>
             <th>对口数</th>
             <th>平均分</th>
+            <th>加权平均分</th>
+            <th>覆盖率</th>
+            <th>原始分</th>
+            <th>优秀毕业分</th>
             <th>就业率</th>
             <th>对口率</th>
+            <th>置信度</th>
+            <th>操作</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in alignmentList" :key="item.major_id">
+          <tr v-for="(item, idx) in sortedAlignmentList" :key="item.major_id">
+            <td>{{ idx + 1 }}</td>
             <td>{{ item.major_name }}</td>
             <td>{{ item.college_name }}</td>
             <td>{{ item.total_students }}</td>
@@ -98,6 +136,10 @@
             <td>{{ item.employed_with_match_students }}</td>
             <td>{{ item.aligned_students }}</td>
             <td>{{ formatScore(item.avg_match_score) }}</td>
+            <td>{{ formatScore(item.weighted_avg_match_score) }}</td>
+            <td>{{ formatRate(item.coverage_rate) }}</td>
+            <td>{{ formatScore(item.raw_major_score) }}</td>
+            <td class="score-strong">{{ formatScore(item.excellent_graduate_score) }}</td>
             <td>{{ formatRate(item.employment_rate) }}</td>
             <td>
               <div class="rate-cell">
@@ -107,9 +149,13 @@
                 <span>{{ formatRate(item.alignment_rate) }}</span>
               </div>
             </td>
+            <td>{{ formatConfidence(item.confidence_level) }}</td>
+            <td>
+              <button class="small secondary" @click="goMajorDetail(item.major_id)">下钻</button>
+            </td>
           </tr>
           <tr v-if="!alignmentList.length">
-            <td colspan="9">暂无数据</td>
+            <td colspan="16">暂无数据</td>
           </tr>
         </tbody>
       </table>
@@ -155,19 +201,23 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import api from "../services/api";
 
+const router = useRouter();
 const loading = ref(false);
 const errorText = ref("");
 const successText = ref("");
 const alignmentList = ref([]);
 const gapList = ref([]);
+const alignmentMeta = ref({});
 
 const filters = reactive({
-  graduation_year: 0,
   algorithm_version: "",
   alignment_threshold: 70,
   min_students: 1,
+  ranking_metric: "excellent_graduate_score",
+  smoothing_k: 20,
   top_n: 5,
   min_gap_count: 1
 });
@@ -200,15 +250,65 @@ const overallAlignmentRate = computed(() => {
   return (alignedStudents.value * 100) / employedStudents.value;
 });
 
+const overallCoverageRate = computed(() => {
+  if (!employedStudents.value) {
+    return 0;
+  }
+  return (matchedStudents.value * 100) / employedStudents.value;
+});
+
 const weightedAverageScore = computed(() => {
   if (!matchedStudents.value) {
     return 0;
   }
   let weighted = 0;
   for (const item of alignmentList.value) {
-    weighted += Number(item.avg_match_score || 0) * Number(item.employed_with_match_students || 0);
+    weighted += Number(item.weighted_avg_match_score || 0) * Number(item.employed_with_match_students || 0);
   }
   return weighted / matchedStudents.value;
+});
+
+const overallExcellentScore = computed(() => {
+  if (!employedStudents.value) {
+    return 0;
+  }
+  let weighted = 0;
+  for (const item of alignmentList.value) {
+    weighted += Number(item.excellent_graduate_score || 0) * Number(item.employed_students || 0);
+  }
+  return weighted / employedStudents.value;
+});
+
+const overallRawScore = computed(() => {
+  if (!employedStudents.value) {
+    return 0;
+  }
+  let weighted = 0;
+  for (const item of alignmentList.value) {
+    weighted += Number(item.raw_major_score || 0) * Number(item.employed_students || 0);
+  }
+  return weighted / employedStudents.value;
+});
+
+const sortedAlignmentList = computed(() => {
+  const metric = filters.ranking_metric || "excellent_graduate_score";
+  const list = [...alignmentList.value];
+  list.sort((a, b) => {
+    const primary = Number(b?.[metric] || 0) - Number(a?.[metric] || 0);
+    if (Math.abs(primary) > 1e-9) {
+      return primary;
+    }
+    const fallbackScore = Number(b?.excellent_graduate_score || 0) - Number(a?.excellent_graduate_score || 0);
+    if (Math.abs(fallbackScore) > 1e-9) {
+      return fallbackScore;
+    }
+    const fallbackStudents = Number(b?.employed_students || 0) - Number(a?.employed_students || 0);
+    if (fallbackStudents !== 0) {
+      return fallbackStudents;
+    }
+    return Number(a?.major_id || 0) - Number(b?.major_id || 0);
+  });
+  return list;
 });
 
 function formatRate(value) {
@@ -217,6 +317,20 @@ function formatRate(value) {
 
 function formatScore(value) {
   return Number(value || 0).toFixed(3);
+}
+
+function formatConfidence(value) {
+  const key = String(value || "none").toLowerCase();
+  if (key === "high") {
+    return "高";
+  }
+  if (key === "medium") {
+    return "中";
+  }
+  if (key === "low") {
+    return "低";
+  }
+  return "无";
 }
 
 function setError(err) {
@@ -229,11 +343,15 @@ function setSuccess(text) {
   errorText.value = "";
 }
 
+function goMajorDetail(majorId) {
+  const id = Number(majorId || 0);
+  if (id > 0) {
+    router.push(`/majors/${id}`);
+  }
+}
+
 function buildCommonParams() {
   const params = {};
-  if (Number(filters.graduation_year || 0) > 0) {
-    params.graduation_year = Number(filters.graduation_year);
-  }
   if (filters.algorithm_version?.trim()) {
     params.algorithm_version = filters.algorithm_version.trim();
   }
@@ -244,6 +362,7 @@ function buildAlignmentParams() {
   const params = buildCommonParams();
   params.alignment_threshold = Number(filters.alignment_threshold || 70);
   params.min_students = Number(filters.min_students || 0);
+  params.smoothing_k = Number(filters.smoothing_k || 20);
   return params;
 }
 
@@ -262,6 +381,7 @@ async function loadDashboard() {
       api.get("/dashboard/major-skill-gaps", { params: buildGapParams() })
     ]);
     alignmentList.value = alignmentResp?.data?.data || [];
+    alignmentMeta.value = alignmentResp?.data?.meta || {};
     gapList.value = gapResp?.data?.data || [];
     setSuccess(`看板更新成功：共 ${alignmentList.value.length} 个专业`);
   } catch (err) {
@@ -272,10 +392,11 @@ async function loadDashboard() {
 }
 
 async function resetFilters() {
-  filters.graduation_year = 0;
   filters.algorithm_version = "";
   filters.alignment_threshold = 70;
   filters.min_students = 1;
+  filters.ranking_metric = "excellent_graduate_score";
+  filters.smoothing_k = 20;
   filters.top_n = 5;
   filters.min_gap_count = 1;
   await loadDashboard();
@@ -314,6 +435,39 @@ onMounted(() => {
   font-size: 16px;
 }
 
+.collapsible-panel {
+  padding: 0;
+}
+
+.panel-summary {
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 14px;
+  user-select: none;
+}
+
+.panel-summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel-summary::before {
+  content: "▶";
+  display: inline-block;
+  margin-right: 8px;
+  color: #5f86aa;
+  transform: rotate(0deg);
+  transition: transform 0.15s ease;
+}
+
+.collapsible-panel[open] > .panel-summary::before {
+  transform: rotate(90deg);
+}
+
+.panel-body {
+  padding: 0 14px 14px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -335,10 +489,23 @@ input {
   background: #fff;
 }
 
+select {
+  border: 1px solid #c8d5e3;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #fff;
+}
+
 .actions {
   margin-top: 12px;
   display: flex;
   gap: 10px;
+}
+
+.meta-hint {
+  margin: 10px 0 0;
+  color: #4c5a67;
+  font-size: 13px;
 }
 
 button {
@@ -386,6 +553,16 @@ button:disabled {
   font-size: 22px;
   color: #0d2b45;
   font-weight: 600;
+}
+
+.score-strong {
+  font-weight: 700;
+  color: #1a4f8f;
+}
+
+.small {
+  padding: 4px 8px;
+  font-size: 12px;
 }
 
 table {

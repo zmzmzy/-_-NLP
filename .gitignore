@@ -11,3 +11,17 @@ frontend/dist/
 *.swp
 *.log
 .DS_Store
+__pycache__/
+*.pyc
+
+# Local SMTP env (do not commit secrets)
+backend/.env.smtp
+backend/.env.smtp.bat
+
+# Job sync runtime data
+tools/job_sync/cache/*
+!tools/job_sync/cache/.gitkeep
+tools/job_sync/output/*
+!tools/job_sync/output/.gitkeep
+tools/job_sync/runs/*
+!tools/job_sync/runs/.gitkeep

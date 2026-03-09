@@ -1,62 +1,101 @@
-# graduation_proj_0.1
+# graduation_proj
 
-毕业设计项目重构版（v0.1）  
-主题：`基于 NLP 的高校毕业生人岗匹配与专业-就业关联度分析系统`
+毕业设计项目（v0.3 精简版）  
+主题：`基于 NLP 的高校专业与社会岗位匹配分析系统`
 
-## 项目目标
+## 项目范围（当前冻结）
 
-1. 结构化管理高校就业信息（企业、岗位、学生就业记录）。
-2. 结构化管理专业信息（覆盖 10-20 个不同学院，不局限于单学院）。
-3. 计算并解释“岗位-专业-学生就业”匹配度。
-4. 支持管理员账号与系统操作日志。
+1. 结构化管理专业数据（多学校/学院/专业）
+2. 结构化管理企业与岗位数据
+3. 支持专业与岗位的 CSV 导入（预检 + 应用）
+4. 计算并解释“专业-岗位”匹配度（主流程）
+5. 学生与就业记录模块保留为扩展能力
+
+> 已下线：岗位爬取/岗位同步脚本与 `/api/job-sync/*` 接口，不再作为当前主流程。
 
 ## 目录结构
 
-- `docs/`：需求基线、架构说明、按顺序执行的 TODO。
-- `db/`：MySQL 建表脚本、完整样本数据、验收脚本。
-- `backend/`：C++ Drogon 后端服务。
-- `frontend/`：Vue 前端骨架。
+- `docs/`：需求、设计、测试与执行 TODO
+- `db/`：MySQL 建表、种子数据、迁移脚本
+- `backend/`：C++ Drogon 后端
+- `frontend/`：Vue 前端
+- `tools/`：历史工具与实验文件（不属于当前主流程）
 
-## 快速启动顺序
+## 快速启动
 
-1. 阅读 `docs/requirements_baseline.md`
-2. 执行 `db/load_full_seed.sh`（一键建库 + 导入完整样本 + 验收）
-4. 启动后端并验证 `/api/health`
-5. 启动前端并验证 `/api` 代理
-6. 严格按 `docs/ordered_todo.md` 顺序推进
+### 1. 初始化数据库
 
-补充阅读：
+```bash
+cd /home/roamer/graduation_proj
+./db/load_full_seed.sh
+```
 
-- 文档索引：`docs/doc_index.md`
-- 测试手册：`docs/testing_guide.md`
+可用环境变量：`DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASS`
 
-## 当前状态（v0.1）
+### 2. 一键启动（推荐）
 
-- 需求基线已冻结
-- 数据模型首版已冻结
-- 后端/前端可运行骨架已完成
-- P2-04（学院/专业/专业画像 CRUD）已完成
-- P2-05（企业/岗位 CRUD）已完成
-- P2-06（学生/就业记录 CRUD）已完成
-- P2-07（列表接口分页/筛选/排序）已完成
-- P2-08（统一参数校验与错误格式）已完成
-- P2-02（管理员认证：登录/登出/会话）已完成
-- P2-03（操作日志中间件与日志入库）已完成
-- P3-01（分词与停用词流程）已完成
-- P3-02（技能词典与加权重叠评分）已完成
-- P3-03（硬约束评分：学历/地点/必备技能）已完成
-- P3-04（融合总分公式）已完成
-- P3-05（`/api/match/single`、`/api/match/batch`）已完成
-- P3-06（匹配解释结果持久化、`/api/match-results`）已完成
-- P1-04（10+ 学院、20+ 专业画像文本）已完成
-- P1-05（各专业学生与就业样本）已完成
-- P4-01（登录页与前端鉴权守卫）已完成
-- P4-02（数据管理页：专业/岗位/学生就业）已完成
-- P4-03（匹配分析页：单条/批量/历史解释）已完成
-- P4-04（专业决策看板：对口率/平均分/技能缺口）已完成
+Linux:
 
-## 默认测试账号
+```bash
+cd /home/roamer/graduation_proj
+chmod +x start_linux.sh
+# 可选：先准备 SMTP 配置
+cp backend/.env.smtp.example backend/.env.smtp
+# 然后编辑 backend/.env.smtp 填入授权码
+./start_linux.sh
+```
 
-- 用户名：`admin`
-- 密码：`admin123`
-- 来源：`db/seed_full.sql`
+Windows:
+
+```bat
+cd /d D:\path\to\graduation_proj
+REM 可选：先准备 SMTP 配置
+copy backend\.env.smtp.example.bat backend\.env.smtp.bat
+REM 然后编辑 backend\.env.smtp.bat 填入授权码
+start_windows.bat
+```
+
+可选环境变量：
+
+- `FRONTEND_PORT`：前端端口（默认 `5173`）
+- `FORCE_NPM_INSTALL=1`：强制重新安装前端依赖
+- `SMTP_ENV_FILE`：自定义 SMTP 环境文件路径
+
+### 3. 手动启动
+
+后端：
+
+```bash
+cd /home/roamer/graduation_proj/backend
+cmake -S . -B build
+cmake --build build -j
+./build/graduate_match_backend
+```
+
+前端：
+
+```bash
+cd /home/roamer/graduation_proj/frontend
+npm install
+npm run dev
+```
+
+## 账号初始化说明
+
+- 项目已取消默认账号写入（`db/seed_full.sql` 与 `db/seed_minimal.sql` 不再创建 `admin`）。
+- 请先在登录页点击“注册账号”，默认角色为 `viewer`。
+- 如需管理权限，请手动执行 SQL 提升角色：`UPDATE users SET role='admin' WHERE email='你的邮箱';`
+
+## 当前版本状态
+
+- 主链路：专业管理 + 岗位管理 + 匹配分析 + 看板，已可运行
+- 专业导入：`/api/majors/import/preview|apply|batches`
+- 岗位导入：`/api/jobs/import/preview|apply|batches`
+- 后端健康检查：`GET /api/health`（版本 `0.3.0`）
+
+## 文档入口
+
+- `docs/doc_index.md`
+- `docs/testing_guide.md`
+- `backend/docs/api_contract.md`
+- `backend/docs/setup.md`

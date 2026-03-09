@@ -1,0 +1,7 @@
+# Example cron entries for job sync (run every 2 hours)
+# Edit SOURCE_KEY and project path before use.
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+0 */2 * * * cd /home/roamer/graduation_proj_0.1/tools/job_sync && ./run_sync.sh zhaopin_C_530 >> ./runs/cron.log 2>&1

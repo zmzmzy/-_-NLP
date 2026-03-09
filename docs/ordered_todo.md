@@ -64,7 +64,7 @@
 
 ## 当前里程碑
 
-- [x] M0 重构基础工程完成（`graduation_proj_0.1`）
+- [x] M0 重构基础工程完成（`graduation_proj`）
 - [x] M1 数据层可稳定初始化
 - [x] M2 后端 API 主干完成
 - [x] M3 匹配引擎完成

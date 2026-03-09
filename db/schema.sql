@@ -12,8 +12,10 @@ SET NAMES utf8mb4;
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   username VARCHAR(64) NOT NULL UNIQUE,
+  email VARCHAR(128) NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('admin', 'teacher', 'viewer') NOT NULL DEFAULT 'teacher',
+  linked_student_id BIGINT NULL UNIQUE,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -36,23 +38,52 @@ CREATE TABLE IF NOT EXISTS system_logs (
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS colleges (
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  code VARCHAR(32) NOT NULL UNIQUE,
-  name VARCHAR(128) NOT NULL UNIQUE,
+  user_id BIGINT NOT NULL,
+  email VARCHAR(128) NOT NULL,
+  token VARCHAR(128) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_password_reset_user (user_id),
+  INDEX idx_password_reset_email (email),
+  INDEX idx_password_reset_expires (expires_at),
+  CONSTRAINT fk_password_reset_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS universities (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(64) NOT NULL UNIQUE,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  province VARCHAR(64) NULL,
+  city VARCHAR(64) NULL,
   description TEXT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS colleges (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  university_id BIGINT NULL,
+  code VARCHAR(32) NOT NULL UNIQUE,
+  name VARCHAR(128) NOT NULL UNIQUE,
+  description TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_colleges_university (university_id),
+  CONSTRAINT fk_colleges_university
+    FOREIGN KEY (university_id) REFERENCES universities(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS majors (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   college_id BIGINT NOT NULL,
-  code VARCHAR(32) NOT NULL UNIQUE,
+  code VARCHAR(32) NOT NULL,
   name VARCHAR(128) NOT NULL,
-  education_level ENUM('bachelor', 'master', 'phd') NOT NULL DEFAULT 'bachelor',
-  discipline_category VARCHAR(128) NULL,
-  enrollment_year INT NULL,
   description TEXT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -109,16 +140,101 @@ CREATE TABLE IF NOT EXISTS jobs (
   technical_projects_text TEXT NOT NULL,
   required_knowledge_skills_text TEXT NOT NULL,
   required_tools_platform_text TEXT NOT NULL,
-  status ENUM('open', 'closed') NOT NULL DEFAULT 'open',
   published_at DATETIME NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_jobs_company (company_id),
-  INDEX idx_jobs_status (status),
   INDEX idx_jobs_degree (min_degree),
   CONSTRAINT fk_jobs_company
     FOREIGN KEY (company_id) REFERENCES companies(id)
     ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS major_import_batches (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  source_type ENUM('csv', 'xlsx', 'manual') NOT NULL DEFAULT 'csv',
+  source_filename VARCHAR(512) NULL,
+  status ENUM('preview', 'applied', 'failed') NOT NULL DEFAULT 'preview',
+  triggered_by_user_id BIGINT NULL,
+  total_rows INT NOT NULL DEFAULT 0,
+  valid_rows INT NOT NULL DEFAULT 0,
+  invalid_rows INT NOT NULL DEFAULT 0,
+  inserted_rows INT NOT NULL DEFAULT 0,
+  updated_rows INT NOT NULL DEFAULT 0,
+  skipped_rows INT NOT NULL DEFAULT 0,
+  error_rows INT NOT NULL DEFAULT 0,
+  preview_payload_json JSON NULL,
+  started_at DATETIME NOT NULL,
+  finished_at DATETIME NULL,
+  message TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_major_import_batches_status (status),
+  INDEX idx_major_import_batches_started (started_at),
+  CONSTRAINT fk_major_import_batches_user
+    FOREIGN KEY (triggered_by_user_id) REFERENCES users(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS major_import_rows (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  batch_id BIGINT NOT NULL,
+  row_no INT NOT NULL,
+  row_status ENUM('valid', 'invalid', 'inserted', 'updated', 'skipped', 'failed') NOT NULL DEFAULT 'valid',
+  university_code VARCHAR(64) NULL,
+  college_code VARCHAR(64) NULL,
+  major_code VARCHAR(64) NULL,
+  error_message TEXT NULL,
+  raw_row_json JSON NULL,
+  normalized_row_json JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_major_import_rows_batch (batch_id),
+  INDEX idx_major_import_rows_status (row_status),
+  CONSTRAINT fk_major_import_rows_batch
+    FOREIGN KEY (batch_id) REFERENCES major_import_batches(id)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS job_import_batches (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  source_type ENUM('csv', 'xlsx', 'manual') NOT NULL DEFAULT 'csv',
+  source_filename VARCHAR(512) NULL,
+  status ENUM('preview', 'applied', 'failed') NOT NULL DEFAULT 'preview',
+  triggered_by_user_id BIGINT NULL,
+  total_rows INT NOT NULL DEFAULT 0,
+  valid_rows INT NOT NULL DEFAULT 0,
+  invalid_rows INT NOT NULL DEFAULT 0,
+  inserted_rows INT NOT NULL DEFAULT 0,
+  updated_rows INT NOT NULL DEFAULT 0,
+  skipped_rows INT NOT NULL DEFAULT 0,
+  error_rows INT NOT NULL DEFAULT 0,
+  preview_payload_json JSON NULL,
+  started_at DATETIME NOT NULL,
+  finished_at DATETIME NULL,
+  message TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_job_import_batches_status (status),
+  INDEX idx_job_import_batches_started (started_at),
+  CONSTRAINT fk_job_import_batches_user
+    FOREIGN KEY (triggered_by_user_id) REFERENCES users(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS job_import_rows (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  batch_id BIGINT NOT NULL,
+  row_no INT NOT NULL,
+  row_status ENUM('valid', 'invalid', 'inserted', 'updated', 'skipped', 'failed') NOT NULL DEFAULT 'valid',
+  company_name VARCHAR(255) NULL,
+  title VARCHAR(255) NULL,
+  error_message TEXT NULL,
+  raw_row_json JSON NULL,
+  normalized_row_json JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_job_import_rows_batch (batch_id),
+  INDEX idx_job_import_rows_status (row_status),
+  CONSTRAINT fk_job_import_rows_batch
+    FOREIGN KEY (batch_id) REFERENCES job_import_batches(id)
+    ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS students (
@@ -170,6 +286,66 @@ CREATE TABLE IF NOT EXISTS employment_records (
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_employment_job
     FOREIGN KEY (job_id) REFERENCES jobs(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS employment_submissions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  submitter_user_id BIGINT NOT NULL,
+  student_id BIGINT NOT NULL,
+  company_id BIGINT NULL,
+  job_id BIGINT NULL,
+  proposed_company_name VARCHAR(255) NULL,
+  proposed_company_main_business TEXT NULL,
+  proposed_company_flagship_products TEXT NULL,
+  proposed_company_domain_area TEXT NULL,
+  proposed_company_application_industries TEXT NULL,
+  proposed_company_province VARCHAR(64) NULL,
+  proposed_company_city VARCHAR(64) NULL,
+  proposed_job_title VARCHAR(255) NULL,
+  proposed_job_type ENUM('full_time', 'internship', 'contract') NULL,
+  proposed_job_min_degree ENUM('none', 'diploma', 'bachelor', 'master', 'phd') NULL,
+  proposed_job_salary_range VARCHAR(64) NULL,
+  proposed_job_location_province VARCHAR(64) NULL,
+  proposed_job_location_city VARCHAR(64) NULL,
+  proposed_job_responsibilities_text TEXT NULL,
+  proposed_job_technical_projects_text TEXT NULL,
+  proposed_job_required_knowledge_skills_text TEXT NULL,
+  proposed_job_required_tools_platform_text TEXT NULL,
+  employment_type ENUM('signed', 'offer', 'internship', 'pending') NOT NULL DEFAULT 'signed',
+  employment_status ENUM('active', 'left', 'unknown') NOT NULL DEFAULT 'active',
+  start_date DATE NULL,
+  end_date DATE NULL,
+  evidence_source VARCHAR(255) NULL,
+  notes TEXT NULL,
+  status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  review_comment TEXT NULL,
+  reviewed_by_user_id BIGINT NULL,
+  reviewed_at DATETIME NULL,
+  approved_employment_record_id BIGINT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_emp_submission_submitter (submitter_user_id),
+  INDEX idx_emp_submission_student (student_id),
+  INDEX idx_emp_submission_status (status),
+  INDEX idx_emp_submission_reviewed_by (reviewed_by_user_id),
+  CONSTRAINT fk_emp_submission_submitter
+    FOREIGN KEY (submitter_user_id) REFERENCES users(id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_emp_submission_student
+    FOREIGN KEY (student_id) REFERENCES students(id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_emp_submission_company
+    FOREIGN KEY (company_id) REFERENCES companies(id)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_emp_submission_job
+    FOREIGN KEY (job_id) REFERENCES jobs(id)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_emp_submission_reviewer
+    FOREIGN KEY (reviewed_by_user_id) REFERENCES users(id)
+    ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_emp_submission_employment
+    FOREIGN KEY (approved_employment_record_id) REFERENCES employment_records(id)
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -243,6 +419,36 @@ CREATE TABLE IF NOT EXISTS match_results (
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS major_job_match_results (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  major_id BIGINT NOT NULL,
+  job_id BIGINT NOT NULL,
+  algorithm_version VARCHAR(64) NOT NULL,
+  semantic_score DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+  skill_score DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+  constraint_score DECIMAL(6,3) NOT NULL DEFAULT 1.000,
+  final_score DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+  matched_skills_json JSON NULL,
+  missing_skills_json JSON NULL,
+  constraint_failures_json JSON NULL,
+  run_mode ENUM('single', 'batch') NOT NULL DEFAULT 'single',
+  created_by_user_id BIGINT NULL,
+  generated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_major_job_match_major (major_id),
+  INDEX idx_major_job_match_job (job_id),
+  INDEX idx_major_job_match_score (final_score),
+  INDEX idx_major_job_match_generated (generated_at),
+  CONSTRAINT fk_major_job_match_major
+    FOREIGN KEY (major_id) REFERENCES majors(id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_major_job_match_job
+    FOREIGN KEY (job_id) REFERENCES jobs(id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_major_job_match_user
+    FOREIGN KEY (created_by_user_id) REFERENCES users(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS major_alignment_snapshots (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   major_id BIGINT NOT NULL,
@@ -251,6 +457,9 @@ CREATE TABLE IF NOT EXISTS major_alignment_snapshots (
   employed_students INT NOT NULL DEFAULT 0,
   aligned_students INT NOT NULL DEFAULT 0,
   avg_match_score DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+  weighted_avg_match_score DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+  excellent_graduate_score DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+  rank_position INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_major_snapshot (major_id, snapshot_date),
   INDEX idx_snapshot_date (snapshot_date),
