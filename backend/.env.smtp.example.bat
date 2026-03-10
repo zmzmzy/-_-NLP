@@ -4,9 +4,9 @@ REM Windows format for start_windows.bat
 
 set GM_SMTP_HOST=smtp.qq.com
 set GM_SMTP_PORT=465
-set GM_SMTP_USERNAME=2097697894@qq.com
+set GM_SMTP_USERNAME=your_account@qq.com
 set GM_SMTP_PASSWORD=REPLACE_WITH_QQ_SMTP_AUTH_CODE
-set GM_SMTP_FROM=2097697894@qq.com
+set GM_SMTP_FROM=your_account@qq.com
 set GM_SMTP_AUTH=LOGIN
 
 set GM_SMTP_USE_SSL=true

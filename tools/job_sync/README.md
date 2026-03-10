@@ -19,7 +19,7 @@ This tool provides a minimal offline sync pipeline for job data:
 ## Quick Start
 
 ```bash
-cd /home/roamer/graduation_proj_0.1/tools/job_sync
+cd /home/roamer/graduation_proj/tools/job_sync
 python3 job_sync.py --source-key zhaopin_C_530
 ```
 
@@ -67,7 +67,7 @@ Each job item in output includes:
 Use wrapper script:
 
 ```bash
-cd /home/roamer/graduation_proj_0.1/tools/job_sync
+cd /home/roamer/graduation_proj/tools/job_sync
 ./run_sync.sh zhaopin_C_530 500
 ```
 

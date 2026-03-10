@@ -29,9 +29,7 @@ cd /home/roamer/graduation_proj
 mysql -uroot -p123456 < db/defense_showcase_seed_v1.sql
 ```
 
-如果你的 MySQL 账号密码不是 `root/123456`，请替换成你本机实际账号。
-
-## 4. 验收步骤（强烈建议）
+## 4. 验收步骤
 
 ```bash
 cd /home/roamer/graduation_proj

@@ -1,29 +1,66 @@
 # graduation_proj
 
-毕业设计项目（v0.3 ）  
-主题：`基于 NLP 的高校专业与社会岗位匹配分析系统`
+毕业设计项目：`基于 NLP 的高校专业与就业岗位匹配分析系统`  
+技术栈：`Vue 3 + Drogon(C++) + MySQL 8`
 
-## 项目范围（当前冻结）
+## 项目概览
 
-1. 结构化管理专业数据（多学校/学院/专业）
-2. 结构化管理企业与岗位数据
-3. 支持专业与岗位的 CSV 导入（预检 + 应用）
-4. 计算并解释“专业-岗位”匹配度（主流程）
-5. 学生与就业记录模块保留为扩展能力
+当前主流程：
 
-> 已下线：岗位爬取/岗位同步脚本与 `/api/job-sync/*` 接口，不再作为当前主流程。
+1. 学校/学院/专业/专业画像管理（含 CSV 导入）
+2. 学生与就业信息管理（含学生自助提交 + 管理员审核）
+3. 专业-岗位、学生-岗位匹配计算与结果解释
+4. 决策看板（专业维度聚合评分与排名）
+5. 注册/登录/找回密码（SMTP 发信）
+
+说明：`tools/job_sync/` 为历史实验目录，不作为当前主流程依赖。
 
 ## 目录结构
 
-- `docs/`：需求、设计、测试与执行 TODO
-- `db/`：MySQL 建表、种子数据、迁移脚本
-- `backend/`：C++ Drogon 后端
-- `frontend/`：Vue 前端
-- `tools/`：历史工具与实验文件（不属于当前主流程）
+- `frontend/`：前端（Vue + Vite）
+- `backend/`：后端（Drogon + C++20）
+- `db/`：数据库 Schema、Seed、迁移与验收 SQL
+- `docs/`：需求、设计、测试、答辩与操作文档
+- `tools/`：历史工具与实验文件
 
-## 快速启动
+## 注意事项
 
-### 1. 初始化数据库
+### 前端
+
+- 默认开发地址：`http://127.0.0.1:5173`
+- `vite` 代理规则：`/api/* -> http://localhost:5555`
+- 若需要同时登录“管理员+学生”进行联调，请使用不同浏览器或无痕窗口，避免同一会话 Cookie 覆盖
+- 首次启动需执行 `npm install`；依赖异常可删除 `node_modules` 后重装
+
+### 后端
+
+- 使用 Drogon，要求 C++20 编译环境
+- 默认监听端口：`5555`
+- 数据库连接优先读 `backend/config/dev.json`，可通过 `GM_DB_*` 环境变量覆盖
+- 启用 SMTP 时依赖系统 `curl`；`start_linux.sh`/`start_windows.bat` 会尝试加载 SMTP 环境文件
+
+### 数据库
+
+- 推荐 MySQL 8.x，字符集 `utf8mb4`
+- 自增主键不保证连续（删除后不会回填），这是正常行为，不建议改
+- `seed_full.sql` 和 `seed_minimal.sql` 均不再创建默认管理员账号
+- 可按场景导入不同数据包：
+  - 基础全量样本：`db/load_full_seed.sh`
+  - 答辩展示样本：`db/defense_showcase_seed_v1.sql`
+
+## 部署与运行须知
+
+### 1) 环境准备
+
+- MySQL 8.x
+- CMake 3.16+
+- Drogon（可被 CMake `find_package(Drogon)` 找到）
+- Node.js + npm
+- curl（仅 SMTP 场景必需）
+
+### 2) 初始化数据库
+
+方式 A（推荐，完整样本）：
 
 ```bash
 cd /home/roamer/graduation_proj
@@ -32,16 +69,29 @@ cd /home/roamer/graduation_proj
 
 可用环境变量：`DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASS`
 
-### 2. 一键启动（推荐）
+方式 B（仅建表）：
+
+```bash
+cd /home/roamer/graduation_proj
+mysql -uroot -p123456 < db/schema.sql
+```
+
+方式 C（答辩演示数据包）：
+
+```bash
+cd /home/roamer/graduation_proj
+mysql -uroot -p123456 < db/defense_showcase_seed_v1.sql
+mysql -uroot -p123456 < db/defense_showcase_verify_v1.sql
+```
+
+### 3) 一键启动（推荐）
 
 Linux:
 
 ```bash
 cd /home/roamer/graduation_proj
 chmod +x start_linux.sh
-# 可选：先准备 SMTP 配置
-cp backend/.env.smtp.example backend/.env.smtp
-# 然后编辑 backend/.env.smtp 填入授权码
+cp backend/.env.smtp.example backend/.env.smtp   # 可选
 ./start_linux.sh
 ```
 
@@ -49,9 +99,7 @@ Windows:
 
 ```bat
 cd /d D:\path\to\graduation_proj
-REM 可选：先准备 SMTP 配置
-copy backend\.env.smtp.example.bat backend\.env.smtp.bat
-REM 然后编辑 backend\.env.smtp.bat 填入授权码
+copy backend\.env.smtp.example.bat backend\.env.smtp.bat   REM 可选
 start_windows.bat
 ```
 
@@ -59,9 +107,9 @@ start_windows.bat
 
 - `FRONTEND_PORT`：前端端口（默认 `5173`）
 - `FORCE_NPM_INSTALL=1`：强制重新安装前端依赖
-- `SMTP_ENV_FILE`：自定义 SMTP 环境文件路径
+- `SMTP_ENV_FILE`：SMTP 环境文件路径（默认 backend 下示例文件）
 
-### 3. 手动启动
+### 4) 手动启动
 
 后端：
 
@@ -80,22 +128,19 @@ npm install
 npm run dev
 ```
 
-## 账号初始化说明
+### 5) 启动后检查
 
-- 项目已取消默认账号写入（`db/seed_full.sql` 与 `db/seed_minimal.sql` 不再创建 `admin`）。
-- 请先在登录页点击“注册账号”，默认角色为 `viewer`。
-- 如需管理权限，请手动执行 SQL 提升角色：`UPDATE users SET role='admin' WHERE email='你的邮箱';`
+- 后端健康检查：`GET http://127.0.0.1:5555/api/health`
+- 前端入口：`http://127.0.0.1:5173`
+- 首次使用请先注册账号，默认角色为 `viewer`
+- 提升管理员权限示例：
+  - `UPDATE users SET role='admin' WHERE email='你的邮箱';`
 
-## 当前版本状态
+## 文档导航
 
-- 主链路：专业管理 + 岗位管理 + 匹配分析 + 看板，已可运行
-- 专业导入：`/api/majors/import/preview|apply|batches`
-- 岗位导入：`/api/jobs/import/preview|apply|batches`
-- 后端健康检查：`GET /api/health`（版本 `0.3.0`）
-
-## 文档入口
-
-- `docs/doc_index.md`
-- `docs/testing_guide.md`
-- `backend/docs/api_contract.md`
-- `backend/docs/setup.md`
+- 主索引：`docs/doc_index.md`
+- 测试手册：`docs/testing_guide.md`
+- 后端接口：`backend/docs/api_contract.md`
+- 后端启动细节：`backend/docs/setup.md`
+- 前端启动细节：`frontend/docs/setup.md`
+- 答辩数据包手册：`docs/defense_showcase_manual_v1.md`

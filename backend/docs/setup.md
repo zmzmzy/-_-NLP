@@ -1,5 +1,7 @@
 # 后端启动说明
 
+本文件聚焦后端细节；完整项目启动说明请先看根目录 `README.md`。
+
 ## 编译
 
 ```bash
@@ -15,7 +17,9 @@ cd /home/roamer/graduation_proj/backend/build
 ./graduate_match_backend
 ```
 
-可选：用环境变量覆盖数据库连接（避免在配置文件写死密码）
+## 数据库连接覆盖（可选）
+
+默认读取 `backend/config/dev.json`。若需临时覆盖，请设置：
 
 ```bash
 export GM_DB_HOST=127.0.0.1
@@ -26,23 +30,31 @@ export GM_DB_PASS=123456
 ./graduate_match_backend
 ```
 
-如需启用“邮箱找回密码（SMTP）”，至少配置以下环境变量：
+## SMTP（找回密码）配置
+
+至少设置以下变量：
 
 ```bash
 export GM_SMTP_HOST=smtp.example.com
 export GM_SMTP_PORT=587
 export GM_SMTP_USERNAME=your_account@example.com
-export GM_SMTP_PASSWORD=your_smtp_password
+export GM_SMTP_PASSWORD=your_smtp_auth_code
 export GM_SMTP_FROM=your_account@example.com
 export GM_SMTP_AUTH=LOGIN
 export GM_SMTP_STARTTLS=true
-# 可选：重置页面地址（邮件中展示）
+export GM_SMTP_USE_SSL=false
+export GM_SMTP_SKIP_TLS_VERIFY=false
+export GM_SMTP_TIMEOUT_MS=10000
 export GM_PASSWORD_RESET_PAGE_URL=http://127.0.0.1:5173/password
-# 可选：调试模式回传 token（默认 false，生产请保持关闭）
 export GM_PASSWORD_RESET_DEBUG_RETURN_TOKEN=false
 ```
 
-说明：SMTP 发送依赖系统 `curl` 命令，请先确认可用（`curl --version`）。
+说明：
+
+- SMTP 发信依赖系统 `curl`，请先确认 `curl --version` 可用
+- Linux/Windows 可直接使用项目内示例文件：
+  - `backend/.env.smtp.example`
+  - `backend/.env.smtp.example.bat`
 
 ## 验证
 
@@ -56,22 +68,8 @@ curl http://127.0.0.1:5555/api/health
 {"status":"ok","service":"graduate_match_backend","version":"0.3.0"}
 ```
 
-## 认证快速验证
+## 认证验证（当前策略）
 
-默认测试账号（见 `db/seed_full.sql`）：
-
-- 用户名：`admin`
-- 密码：`admin123`
-
-如需一键准备完整样本数据：
-
-```bash
-cd /home/roamer/graduation_proj
-./db/load_full_seed.sh
-```
-
-```bash
-curl -s -X POST http://127.0.0.1:5555/api/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"admin123"}'
-```
+- 系统不再内置默认账号
+- 先通过 `/api/auth/register` 注册，再登录
+- 需要管理员权限时，手动执行 SQL 提升角色（见 `README.md`）
