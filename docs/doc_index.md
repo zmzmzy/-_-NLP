@@ -15,8 +15,9 @@
 9. `backend/docs/api_contract.md`：看接口设计与字段约定。
 10. `docs/testing_guide.md`：按命令验收当前完成度。
 11. `docs/testdata_pack_manual_v1.md`：备用测试数据导入与回滚手册。
-12. `tools/job_sync/README.md`：历史方案文档（已下线，不再作为当前主流程）。
-13. `docs/db_replan_v0.3.md`：看数据库分层收敛方案（Core / Extension / Ops）。
+12. `docs/defense_showcase_manual_v1.md`：答辩展示数据包导入、验收与回滚手册。
+13. `tools/job_sync/README.md`：历史方案文档（已下线，不再作为当前主流程）。
+14. `docs/db_replan_v0.3.md`：看数据库分层收敛方案（Core / Extension / Ops）。
 
 ## 完成度快照（便于复盘）
 
