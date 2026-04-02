@@ -7,19 +7,20 @@
 2. `README.md`：先跑通环境、部署与运行流程（前端/后端/数据库注意事项）。
 3. `docs/requirements_baseline_v0.4.md`：当前主线需求冻结版本（学生就业-专业对口）。
 4. `docs/architecture.md`：看分层和数据流。
-5. `docs/refactor_todolist_v0.4.md`：学生就业-专业对口主线重构清单（当前执行基线）。
-6. `docs/ordered_todo_v0.2.md`：v0.2 重构与优化执行清单（历史记录，含已下线能力）。
-7. `docs/ordered_todo.md`：v0.1 路线和历史里程碑。
-8. `docs/functional_design_flowchart.md`：看功能模块端到端流程图。
-9. `docs/defense_simplified_flowchart.md`：答辩展示用简化业务流程图。
-10. `backend/docs/api_contract.md`：看接口设计与字段约定。
-11. `backend/docs/setup.md`：后端单独启动、DB 覆盖与 SMTP 变量说明。
-12. `frontend/docs/setup.md`：前端启动、代理与会话联调说明。
-13. `docs/testing_guide.md`：按命令验收当前完成度。
-14. `docs/testdata_pack_manual_v1.md`：备用测试数据导入与回滚手册。
-15. `docs/defense_showcase_manual_v1.md`：答辩展示数据包导入、验收与回滚手册。
-16. `tools/job_sync/README.md`：历史方案文档（已下线，不再作为当前主流程）。
-17. `docs/db_replan_v0.3.md`：看数据库分层收敛方案（Core / Extension / Ops）。
+5. `docs/db_table_flowchart.md`：数据库表关系 Flowchart（Mermaid）。
+6. `docs/refactor_todolist_v0.4.md`：学生就业-专业对口主线重构清单（当前执行基线）。
+7. `docs/ordered_todo_v0.2.md`：v0.2 重构与优化执行清单（历史记录，含已下线能力）。
+8. `docs/ordered_todo.md`：v0.1 路线和历史里程碑。
+9. `docs/functional_design_flowchart.md`：看功能模块端到端流程图。
+10. `docs/defense_simplified_flowchart.md`：答辩展示用简化业务流程图。
+11. `backend/docs/api_contract.md`：看接口设计与字段约定。
+12. `backend/docs/setup.md`：后端单独启动、DB 覆盖与 SMTP 变量说明。
+13. `frontend/docs/setup.md`：前端启动、代理与会话联调说明。
+14. `docs/testing_guide.md`：按命令验收当前完成度。
+15. `docs/testdata_pack_manual_v1.md`：备用测试数据导入与回滚手册。
+16. `docs/defense_showcase_manual_v1.md`：答辩展示数据包导入、验收与回滚手册。
+17. `tools/job_sync/README.md`：历史方案文档（已下线，不再作为当前主流程）。
+18. `docs/db_replan_v0.3.md`：看数据库分层收敛方案（Core / Extension / Ops）。
 
 ## 完成度快照（便于复盘）
 

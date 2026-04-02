@@ -3,6 +3,15 @@
 日期：2026-03-02  
 适用范围：`graduation_proj`
 
+## 0.1 代理环境说明（重要）
+
+如果你的机器开了代理/VPN，`curl` 访问本地 `127.0.0.1` 可能被代理劫持，出现 `502` 等误报。  
+建议在测试前执行：
+
+```bash
+export NO_PROXY=127.0.0.1,localhost
+```
+
 ## 0. 准备
 
 1. 初始化数据库（推荐：完整样本一键导入）
@@ -34,6 +43,14 @@ cmake -S . -B build
 cmake --build build -j
 cd build
 ./graduate_match_backend
+```
+
+4. 可选：一键跑本地自动化测试（集成+异常）
+
+```bash
+cd /home/roamer/graduation_proj
+chmod +x tools/testing/run_local_tests.sh
+./tools/testing/run_local_tests.sh
 ```
 
 ## 1. 基础健康检查

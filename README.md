@@ -144,3 +144,24 @@ npm run dev
 - 后端启动细节：`backend/docs/setup.md`
 - 前端启动细节：`frontend/docs/setup.md`
 - 答辩数据包手册：`docs/defense_showcase_manual_v1.md`
+
+## 自动化测试（新增）
+
+可直接执行：
+
+```bash
+cd /home/roamer/graduation_proj
+chmod +x tools/testing/run_local_tests.sh
+./tools/testing/run_local_tests.sh
+```
+
+该脚本会依次执行：
+
+- 后端重新编译
+- 数据库重建与种子导入
+- 后端服务拉起与健康检查
+- API 集成冒烟测试
+- API 异常路径冒烟测试
+- 数据库验收报告
+
+详细说明见：`tools/testing/README.md`
