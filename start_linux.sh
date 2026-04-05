@@ -6,10 +6,27 @@ BACKEND_DIR="${ROOT_DIR}/backend"
 FRONTEND_DIR="${ROOT_DIR}/frontend"
 BACKEND_BUILD_DIR="${BACKEND_DIR}/build"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
+FRONTEND_HOST="${FRONTEND_HOST:-0.0.0.0}"
+FRONTEND_USE_HTTPS="${FRONTEND_USE_HTTPS:-1}"
 SMTP_ENV_FILE="${SMTP_ENV_FILE:-${BACKEND_DIR}/.env.smtp}"
+AI_ENV_FILE="${AI_ENV_FILE:-${BACKEND_DIR}/.env.ai}"
+START_LITELLM_GATEWAY="${START_LITELLM_GATEWAY:-0}"
 
 log() {
   echo "[start_linux] $*"
+}
+
+ensure_local_no_proxy() {
+  local current="${NO_PROXY:-${no_proxy:-}}"
+  local required=("127.0.0.1" "localhost" "::1" "0.0.0.0")
+  local host
+  for host in "${required[@]}"; do
+    if [[ ",${current}," != *",${host},"* ]]; then
+      current="${current:+${current},}${host}"
+    fi
+  done
+  export NO_PROXY="${current}"
+  export no_proxy="${current}"
 }
 
 require_cmd() {
@@ -35,8 +52,29 @@ if [[ -f "${SMTP_ENV_FILE}" ]]; then
   set +a
 fi
 
+if [[ -f "${AI_ENV_FILE}" ]]; then
+  log "Loading AI env from ${AI_ENV_FILE}"
+  # shellcheck disable=SC1090
+  set -a
+  source "${AI_ENV_FILE}"
+  set +a
+fi
+
+ensure_local_no_proxy
+log "NO_PROXY prepared for local services"
+
 if [[ -n "${GM_SMTP_HOST:-}" ]]; then
   require_cmd curl
+fi
+
+if [[ "${START_LITELLM_GATEWAY}" == "1" || "${START_LITELLM_GATEWAY}" == "true" ]]; then
+  if [[ -x "${ROOT_DIR}/tools/ai_stack/start_litellm.sh" ]]; then
+    log "Starting LiteLLM gateway before backend"
+    "${ROOT_DIR}/tools/ai_stack/start_litellm.sh"
+  else
+    echo "START_LITELLM_GATEWAY is enabled but tools/ai_stack/start_litellm.sh not found" >&2
+    exit 1
+  fi
 fi
 
 log "Configuring backend"
@@ -85,6 +123,13 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+FRONTEND_SCHEME="https"
+FRONTEND_SCRIPT="dev"
+if [[ "${FRONTEND_USE_HTTPS}" == "0" || "${FRONTEND_USE_HTTPS}" == "false" ]]; then
+  FRONTEND_SCHEME="http"
+  FRONTEND_SCRIPT="dev:http"
+fi
+
 log "Backend started. Health check: http://127.0.0.1:5555/api/health"
-log "Starting frontend on http://127.0.0.1:${FRONTEND_PORT}"
-npm --prefix "${FRONTEND_DIR}" run dev -- --host 0.0.0.0 --port "${FRONTEND_PORT}"
+log "Starting frontend on ${FRONTEND_SCHEME}://${FRONTEND_HOST}:${FRONTEND_PORT} (npm script: ${FRONTEND_SCRIPT})"
+npm --prefix "${FRONTEND_DIR}" run "${FRONTEND_SCRIPT}" -- --host "${FRONTEND_HOST}" --port "${FRONTEND_PORT}"

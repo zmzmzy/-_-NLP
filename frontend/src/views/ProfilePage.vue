@@ -1,20 +1,53 @@
 <template>
-  <section class="page">
-    <h2>{{ isAdmin ? "管理员个人主页 / 就业审核" : "个人主页" }}</h2>
-    <p class="desc">
-      {{
-        isAdmin
-          ? "管理员可在此审核学生提交的就业信息，单条或批量确认后写入正式就业记录。"
-          : "在此维护个人学生信息，并提交就业信息（需管理员审核后生效）。"
-      }}
-    </p>
+  <section class="page gm-page fade-up">
+    <header class="panel view-hero">
+      <div>
+        <p class="view-tag">{{ isAdmin ? "Review Center" : "Profile Center" }}</p>
+        <h2>{{ isAdmin ? "管理员个人主页 / 就业审核" : "个人主页" }}</h2>
+        <p class="desc">
+          {{
+            isAdmin
+              ? "管理员可在此审核学生提交的就业信息，单条或批量确认后写入正式就业记录。"
+              : "在此维护个人学生信息，并提交就业信息（需管理员审核后生效）。"
+          }}
+        </p>
+      </div>
+      <div class="hero-metrics" v-if="isAdmin">
+        <article class="hero-card">
+          <p>待审（当前页）</p>
+          <strong>{{ adminSubmissions.filter((item) => item.status === "pending").length }}</strong>
+        </article>
+        <article class="hero-card">
+          <p>筛选总量</p>
+          <strong>{{ adminMeta.total_count }}</strong>
+        </article>
+        <article class="hero-card">
+          <p>当前选中</p>
+          <strong>{{ selectedIds.length }}</strong>
+        </article>
+      </div>
+      <div class="hero-metrics" v-else>
+        <article class="hero-card">
+          <p>学生绑定</p>
+          <strong>{{ hasBoundStudent ? "已绑定" : "未绑定" }}</strong>
+        </article>
+        <article class="hero-card">
+          <p>提交总数</p>
+          <strong>{{ mySubMeta.total_count }}</strong>
+        </article>
+        <article class="hero-card">
+          <p>可选岗位</p>
+          <strong>{{ jobs.length }}</strong>
+        </article>
+      </div>
+    </header>
 
     <p v-if="errorText" class="error">{{ errorText }}</p>
     <p v-if="successText" class="success">{{ successText }}</p>
 
     <template v-if="isAdmin">
-      <details class="panel form-panel collapsible-panel" open>
-        <summary class="panel-summary">审核筛选</summary>
+      <section class="panel form-panel">
+        <h3 class="section-title">审核筛选</h3>
         <div class="panel-body">
           <div class="grid">
             <label>
@@ -50,10 +83,10 @@
             </button>
           </div>
         </div>
-      </details>
+      </section>
 
-      <details class="panel form-panel collapsible-panel" open>
-        <summary class="panel-summary">批量处理</summary>
+      <section class="panel form-panel">
+        <h3 class="section-title">批量处理</h3>
         <div class="panel-body">
           <div class="grid">
             <label>
@@ -77,10 +110,10 @@
             </button>
           </div>
         </div>
-      </details>
+      </section>
 
-      <details class="panel collapsible-panel" open>
-        <summary class="panel-summary">最近审核操作日志</summary>
+      <section class="panel">
+        <h3 class="section-title">最近审核操作日志</h3>
         <div class="panel-body">
           <div class="actions">
             <button class="secondary" :disabled="logLoading" @click="loadAdminLogs">
@@ -113,7 +146,7 @@
             </tbody>
           </table>
         </div>
-      </details>
+      </section>
 
       <div class="panel">
         <h3>待审核列表</h3>
@@ -192,18 +225,18 @@
     </template>
 
     <template v-else>
-      <details class="panel collapsible-panel" open>
-        <summary class="panel-summary">我的账户</summary>
+      <section class="panel">
+        <h3 class="section-title">我的账户</h3>
         <div class="panel-body">
           <p class="meta">账号：{{ authStore.user?.username || "-" }}</p>
           <p class="meta">邮箱：{{ authStore.user?.email || "-" }}</p>
           <p class="meta">权限：{{ authStore.user?.role || "viewer" }}</p>
           <p class="meta">学生绑定状态：{{ hasBoundStudent ? "已绑定" : "未绑定" }}</p>
         </div>
-      </details>
+      </section>
 
-      <details class="panel form-panel collapsible-panel" :open="!hasBoundStudent">
-        <summary class="panel-summary">学生身份绑定（学号 + 姓名）</summary>
+      <section class="panel form-panel">
+        <h3 class="section-title">学生身份绑定（学号 + 姓名）</h3>
         <div class="panel-body">
           <p class="meta">
             {{ hasBoundStudent ? "已完成绑定，可维护个人资料与就业提交。" : "请先绑定学号和姓名，绑定成功后才能修改与提交。"}}
@@ -227,10 +260,10 @@
             </button>
           </div>
         </div>
-      </details>
+      </section>
 
-      <details v-if="hasBoundStudent" class="panel form-panel collapsible-panel" open>
-        <summary class="panel-summary">学生资料维护</summary>
+      <section v-if="hasBoundStudent" class="panel form-panel">
+        <h3 class="section-title">学生资料维护</h3>
         <div class="panel-body">
           <div class="grid">
             <label>
@@ -306,10 +339,10 @@
             </button>
           </div>
         </div>
-      </details>
+      </section>
 
-      <details v-if="hasBoundStudent" class="panel form-panel collapsible-panel" open>
-        <summary class="panel-summary">提交就业信息（待审核）</summary>
+      <section v-if="hasBoundStudent" class="panel form-panel">
+        <h3 class="section-title">提交就业信息（待审核）</h3>
         <div class="panel-body">
           <div class="grid">
             <label>
@@ -407,12 +440,12 @@
             <button class="secondary" @click="resetSubmissionForm">重置表单</button>
           </div>
         </div>
-      </details>
+      </section>
 
       <div v-if="hasBoundStudent" class="panel">
         <h3>我的就业提交历史</h3>
-        <details class="form-panel collapsible-panel">
-          <summary class="panel-summary">筛选</summary>
+        <section class="form-panel">
+          <h3 class="section-title">筛选</h3>
           <div class="panel-body">
             <div class="grid compact-grid">
               <label>
@@ -431,7 +464,7 @@
               </button>
             </div>
           </div>
-        </details>
+        </section>
 
         <p class="meta">
           当前第 {{ mySubMeta.page }} / {{ mySubMeta.total_pages }} 页，共 {{ mySubMeta.total_count }} 条
@@ -1132,37 +1165,87 @@ onMounted(async () => {
 .page {
   display: grid;
   gap: 12px;
+  overflow: visible !important;
+}
+
+.view-hero {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(173, 211, 255, 0.3);
+  background:
+    radial-gradient(circle at 10% 16%, rgba(56, 189, 248, 0.2), transparent 35%),
+    linear-gradient(130deg, rgba(14, 165, 233, 0.16), rgba(15, 23, 42, 0.36));
+}
+
+.view-tag {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  background: rgba(148, 163, 184, 0.2);
+  color: #dbeafe;
+  font-size: 12px;
 }
 
 h2 {
+  margin: 8px 0 0;
+}
+
+.hero-metrics {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hero-card {
+  border: 1px solid rgba(173, 211, 255, 0.24);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-card p {
   margin: 0;
+  color: #bcd3ee;
+  font-size: 12px;
+}
+
+.hero-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+  color: #f2f8ff;
 }
 
 .desc {
-  margin: 0;
-  color: #475467;
+  margin: 8px 0 0;
+  color: #b5cae3;
 }
 
 .panel {
-  background: #fff;
-  border-radius: 10px;
-  padding: 14px;
-  box-shadow: 0 6px 16px rgba(16, 24, 40, 0.08);
+  padding: 12px;
+  overflow-x: auto;
 }
 
-.panel-summary {
-  cursor: pointer;
-  font-weight: 600;
+.section-title {
+  margin: 0;
+  font-size: 16px;
+  color: #d8e7f8;
+  padding: 12px;
 }
 
 .panel-body {
-  margin-top: 10px;
+  padding: 0 12px 12px;
   display: grid;
   gap: 12px;
 }
 
 .form-panel {
-  padding: 12px 14px;
+  padding: 0;
 }
 
 .grid {
@@ -1179,21 +1262,23 @@ label {
   display: grid;
   gap: 6px;
   font-size: 13px;
-  color: #344054;
+  color: #d2e3f6;
 }
 
 input,
 select,
 textarea {
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
+  border: 1px solid rgba(173, 211, 255, 0.32);
+  border-radius: 10px;
   padding: 8px 10px;
   font-size: 14px;
   font-family: inherit;
+  color: #f5f8ff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 input:disabled {
-  background: #f2f4f7;
+  opacity: 0.78;
 }
 
 .actions {
@@ -1203,20 +1288,7 @@ input:disabled {
 }
 
 button {
-  border: none;
-  border-radius: 8px;
-  background: #0d2b45;
-  color: #fff;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-button.secondary {
-  background: #4267b2;
-}
-
-button.danger {
-  background: #b42318;
+  border-radius: 10px;
 }
 
 button.small {
@@ -1224,23 +1296,25 @@ button.small {
   padding: 4px 8px;
 }
 
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  min-width: 900px;
 }
 
 th,
 td {
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid rgba(173, 211, 255, 0.2);
   padding: 8px;
   text-align: left;
   vertical-align: top;
+  white-space: nowrap;
+}
+
+th {
+  background: rgba(147, 197, 253, 0.14);
+  color: #d7e7f9;
 }
 
 .row-actions {
@@ -1251,7 +1325,7 @@ td {
 
 .meta {
   margin: 0;
-  color: #475467;
+  color: #a8bfd9;
   font-size: 13px;
 }
 
@@ -1260,22 +1334,25 @@ td {
   margin-left: 4px;
   padding: 1px 6px;
   border-radius: 10px;
-  background: #e9f2ff;
-  color: #1e4f8f;
+  border: 1px solid rgba(147, 197, 253, 0.36);
+  background: rgba(147, 197, 253, 0.16);
+  color: #d6eaff;
   font-size: 11px;
 }
 
 .error {
   margin: 0;
-  color: #b42318;
 }
 
 .success {
   margin: 0;
-  color: #027a48;
 }
 
 @media (max-width: 1200px) {
+  .hero-metrics {
+    grid-template-columns: 1fr;
+  }
+
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

@@ -8,6 +8,7 @@ void registerAllRoutes() {
     registerJobsRoutes();
     registerStudentEmploymentRoutes();
     registerMatchingRoutes();
+    registerDashboardInsightRoutes();
     registerProfileRoutes();
 }
 

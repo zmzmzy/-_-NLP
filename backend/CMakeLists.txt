@@ -11,12 +11,14 @@ add_executable(${PROJECT_NAME}
   src/app_bootstrap.cc
   src/app_routes.cc
   src/app_support.cc
+  src/ai_insight_agent.cc
   src/main.cc
   src/routes/system_routes.cc
   src/routes/education_routes.cc
   src/routes/jobs_routes.cc
   src/routes/student_employment_routes.cc
   src/routes/matching_routes.cc
+  src/routes/dashboard_insight_routes.cc
   src/routes/profile_routes.cc
 )
 

@@ -1,31 +1,40 @@
 <template>
-  <section class="login-page">
-    <div class="login-card">
-      <h2>系统登录</h2>
-      <p class="hint">支持用户名或邮箱登录。</p>
+  <section class="auth-screen fade-up">
+    <div class="auth-card auth-single">
+      <header class="auth-head">
+        <p class="small-text">Welcome back</p>
+        <h2>账号登录</h2>
+      </header>
 
-      <form @submit.prevent="submitLogin">
-        <label>
-          账号（用户名 / 邮箱）
-          <input v-model.trim="form.account" type="text" placeholder="请输入用户名或邮箱" />
+      <form class="auth-form" @submit.prevent="submitLogin">
+        <label class="auth-field">
+          <span>账号（用户名 / 邮箱）</span>
+          <input v-model.trim="form.account" type="text" placeholder="请输入用户名 / 学号 / 邮箱" />
         </label>
 
-        <label>
-          密码
+        <label class="auth-field">
+          <span>密码</span>
           <input v-model="form.password" type="password" placeholder="请输入密码" />
         </label>
 
+        <div class="auth-row">
+          <label class="auth-check">
+            <input v-model="remember" type="checkbox" />
+            <span>记住我</span>
+          </label>
+          <router-link class="auth-link" to="/password">忘记密码？</router-link>
+        </div>
+
         <p v-if="errorText" class="error">{{ errorText }}</p>
 
-        <button :disabled="loading" type="submit">
-          {{ loading ? "登录中..." : "登录" }}
+        <button class="submit-btn" :disabled="loading" type="submit">
+          {{ loading ? "登录中..." : "立即登录" }}
         </button>
       </form>
 
-      <p class="links">
-        <router-link to="/register">注册账号</router-link>
-        <span>|</span>
-        <router-link to="/password">找回密码</router-link>
+      <p class="auth-bottom">
+        还没有账号？
+        <router-link to="/register">立即注册</router-link>
       </p>
     </div>
   </section>
@@ -47,6 +56,7 @@ const form = reactive({
 
 const loading = ref(false);
 const errorText = ref("");
+const remember = ref(true);
 
 async function submitLogin() {
   errorText.value = "";
@@ -69,80 +79,86 @@ async function submitLogin() {
 </script>
 
 <style scoped>
-.login-page {
-  min-height: calc(100vh - 40px);
+.auth-screen {
+  min-height: min(760px, calc(100vh - 12px));
   display: grid;
   place-items: center;
+  padding: 18px;
 }
 
-.login-card {
-  width: min(420px, 92vw);
-  background: #fff;
-  border-radius: 12px;
-  padding: 22px;
-  box-shadow: 0 10px 28px rgba(13, 43, 69, 0.12);
+.auth-single {
+  width: min(520px, calc(100vw - 24px));
+}
+
+.auth-head {
+  margin-bottom: 16px;
+}
+
+.small-text {
+  margin: 0;
+  color: #7d8ca6;
+  font-size: 13px;
 }
 
 h2 {
-  margin: 0;
+  margin: 6px 0 0;
+  font-size: 34px;
+  color: #f5f8ff;
 }
 
-.hint {
-  margin: 8px 0 18px;
-  color: #4c5a67;
-  font-size: 14px;
-}
-
-form {
+.auth-form {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
-label {
+.auth-field {
   display: grid;
   gap: 6px;
+}
+
+.auth-field span {
   font-size: 14px;
-  color: #22313f;
+  color: #c9d6ec;
 }
 
-input {
-  border: 1px solid #c9d6e3;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
-}
-
-button {
-  border: none;
-  border-radius: 8px;
-  background: #0d2b45;
-  color: #fff;
-  padding: 10px 12px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.error {
-  margin: 0;
-  color: #b42318;
-  font-size: 13px;
-}
-
-.links {
-  margin-top: 14px;
-  font-size: 13px;
-  color: #344054;
+.auth-row {
   display: flex;
-  gap: 8px;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
 }
 
-.links a {
-  color: #0d2b45;
+.auth-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9db0cb;
+}
+
+.auth-link {
+  text-decoration: none;
+  color: #8db4ff;
+}
+
+.auth-link:hover {
+  color: #b3cfff;
+}
+
+.auth-bottom {
+  margin: 16px 0 0;
+  text-align: center;
+  color: #9db0cb;
+  font-size: 13px;
+}
+
+.auth-bottom a {
+  color: #8db4ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-bottom a:hover {
+  color: #b3cfff;
 }
 </style>

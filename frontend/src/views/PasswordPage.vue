@@ -1,53 +1,59 @@
 <template>
-  <section class="auth-page">
-    <div class="auth-wrap">
-      <article class="auth-card">
-        <h2>找回密码</h2>
+  <section class="auth-screen fade-up">
+    <div class="auth-stack">
+      <article class="auth-card auth-single">
+        <header class="auth-head">
+          <p class="small-text">Step 1</p>
+          <h2>找回密码</h2>
+        </header>
         <p class="hint">输入邮箱后，系统会通过邮件发送 6 位验证码。</p>
-        <form @submit.prevent="submitForgot">
-          <label>
-            注册邮箱
+        <form class="auth-form" @submit.prevent="submitForgot">
+          <label class="auth-field">
+            <span>注册邮箱</span>
             <input v-model.trim="forgotForm.email" type="email" placeholder="name@example.com" />
           </label>
           <p v-if="forgotMsg" class="success">{{ forgotMsg }}</p>
-          <button :disabled="forgotLoading" type="submit">
+          <button class="submit-btn" :disabled="forgotLoading" type="submit">
             {{ forgotLoading ? "提交中..." : "获取重置口令" }}
           </button>
         </form>
       </article>
 
-      <article class="auth-card">
-        <h2>重置密码</h2>
+      <article class="auth-card auth-single">
+        <header class="auth-head">
+          <p class="small-text">Step 2</p>
+          <h2>重置密码</h2>
+        </header>
         <p class="hint">填写邮箱、6 位验证码和新密码。</p>
-        <form @submit.prevent="submitReset">
-          <label>
-            邮箱
+        <form class="auth-form" @submit.prevent="submitReset">
+          <label class="auth-field">
+            <span>邮箱</span>
             <input v-model.trim="resetForm.email" type="email" placeholder="name@example.com" />
           </label>
-          <label>
-            验证码
+          <label class="auth-field">
+            <span>验证码</span>
             <input v-model.trim="resetForm.token" type="text" placeholder="输入邮件中的 6 位验证码" />
           </label>
-          <label>
-            新密码
+          <label class="auth-field">
+            <span>新密码</span>
             <input v-model="resetForm.newPassword" type="password" placeholder="至少 6 位" />
           </label>
-          <label>
-            确认新密码
+          <label class="auth-field">
+            <span>确认新密码</span>
             <input v-model="resetForm.confirmPassword" type="password" placeholder="再次输入" />
           </label>
           <p v-if="resetError" class="error">{{ resetError }}</p>
           <p v-if="resetMsg" class="success">{{ resetMsg }}</p>
-          <button :disabled="resetLoading" type="submit">
+          <button class="submit-btn" :disabled="resetLoading" type="submit">
             {{ resetLoading ? "提交中..." : "确认重置" }}
           </button>
         </form>
       </article>
     </div>
 
-    <p class="links">
+    <p class="auth-bottom">
       <router-link to="/login">返回登录</router-link>
-      <span>|</span>
+      <span class="sep">·</span>
       <router-link to="/register">去注册</router-link>
     </p>
   </section>
@@ -129,100 +135,90 @@ async function submitReset() {
 </script>
 
 <style scoped>
-.auth-page {
-  min-height: calc(100vh - 40px);
+.auth-screen {
+  min-height: min(860px, calc(100vh - 12px));
   display: grid;
   place-items: center;
-  padding: 24px 0;
+  padding: 18px;
 }
 
-.auth-wrap {
-  width: min(980px, 94vw);
+.auth-stack {
+  width: min(560px, calc(100vw - 24px));
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
-.auth-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 10px 28px rgba(13, 43, 69, 0.12);
+.auth-single {
+  width: 100%;
 }
 
-h2 {
+.small-text {
   margin: 0;
-}
-
-.hint {
-  margin: 8px 0 14px;
-  color: #4c5a67;
+  color: #7d8ca6;
   font-size: 13px;
 }
 
-form {
+h2 {
+  margin: 6px 0 0;
+  color: #f5f8ff;
+  font-size: 30px;
+}
+
+.hint {
+  margin: 0 0 14px;
+  color: #9db0cb;
+  font-size: 13px;
+}
+
+.auth-form {
   display: grid;
   gap: 12px;
 }
 
-label {
+.auth-field {
   display: grid;
   gap: 6px;
-  font-size: 14px;
-  color: #22313f;
 }
 
-input {
-  border: 1px solid #c9d6e3;
-  border-radius: 8px;
-  padding: 10px 12px;
+.auth-field span {
+  color: #c9d6ec;
   font-size: 14px;
 }
 
-button {
-  border: none;
-  border-radius: 8px;
-  background: #0d2b45;
-  color: #fff;
-  padding: 10px 12px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+.error,
+.success {
+  margin: 0;
+  font-size: 13px;
+  word-break: break-word;
 }
 
 .error {
-  margin: 0;
   color: #b42318;
-  font-size: 13px;
 }
 
 .success {
-  margin: 0;
   color: #027a48;
+}
+
+.auth-bottom {
+  margin: 10px 0 0;
+  text-align: center;
+  color: #9db0cb;
   font-size: 13px;
-  word-break: break-all;
 }
 
-.links {
-  margin-top: 12px;
-  font-size: 13px;
-  color: #344054;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.auth-bottom a {
+  color: #8db4ff;
+  text-decoration: none;
+  font-weight: 600;
 }
 
-.links a {
-  color: #0d2b45;
+.auth-bottom a:hover {
+  color: #b3cfff;
 }
 
-@media (max-width: 900px) {
-  .auth-wrap {
-    grid-template-columns: 1fr;
-  }
+.sep {
+  margin: 0 8px;
+  color: #6f84a5;
 }
 </style>

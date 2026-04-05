@@ -5,7 +5,7 @@
 ## 安装依赖
 
 ```bash
-cd /home/roamer/graduation_proj/frontend
+cd /home/roamer/graduation_proj_0.1/frontend
 npm install
 ```
 
@@ -15,11 +15,13 @@ npm install
 npm run dev
 ```
 
-默认地址：`http://127.0.0.1:5173`
+默认地址：`https://127.0.0.1:5173`
 
 ## 开发代理
 
-- `/api/*` 代理到 `http://localhost:5555`
+- 默认开发地址：`https://127.0.0.1:5173`
+- 可临时切换 HTTP：`npm run dev:http`
+- `/api/*` 代理到 `http://127.0.0.1:5555`
 - 配置文件：`frontend/vite.config.js`
 
 ## 登录与会话说明

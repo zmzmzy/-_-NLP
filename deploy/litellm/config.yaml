@@ -1,0 +1,37 @@
+# LiteLLM proxy config for graduation_proj_0.1
+# Use model alias `dashboard-default` in backend profile.
+
+model_list:
+  - model_name: dashboard-default
+    litellm_params:
+      model: openai/Qwen/Qwen2.5-72B-Instruct
+      api_base: https://api.siliconflow.cn/v1
+      api_key: os.environ/SILICONFLOW_API_KEY
+
+  - model_name: dashboard-fallback-openai
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: dashboard-fallback-openrouter
+    litellm_params:
+      model: openrouter/openai/gpt-4o-mini
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: dashboard-fallback-gemini
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 2
+  timeout: 30
+  fallbacks:
+    - dashboard-default: [dashboard-fallback-openai, dashboard-fallback-openrouter, dashboard-fallback-gemini]
+
+litellm_settings:
+  drop_params: true
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

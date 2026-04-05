@@ -21,6 +21,8 @@
 16. `docs/defense_showcase_manual_v1.md`：答辩展示数据包导入、验收与回滚手册。
 17. `tools/job_sync/README.md`：历史方案文档（已下线，不再作为当前主流程）。
 18. `docs/db_replan_v0.3.md`：看数据库分层收敛方案（Core / Extension / Ops）。
+19. `docs/decision_board_ai_agent.md`：决策看板 AI 解读（LiteLLM 主链路 + Dify 编排）交付说明。
+20. `docs/integrations/dify_dashboard_workflow.md`：Dify 工作流接入模板与输出规范。
 
 ## 完成度快照（便于复盘）
 

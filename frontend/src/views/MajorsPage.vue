@@ -1,5 +1,5 @@
 <template>
-  <section class="page">
+  <section class="page gm-page fade-up">
     <h2>专业信息管理</h2>
     <p class="desc">
       本页已接入学院、专业、专业画像接口，可进行新增、编辑、删除与画像维护。

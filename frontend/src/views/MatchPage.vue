@@ -1,9 +1,26 @@
 <template>
-  <section class="page">
-    <h2>专业-岗位匹配分析</h2>
-    <p class="desc">
-      主流程聚焦“专业能力画像”与“社会岗位需求”之间的匹配度评估。
-    </p>
+  <section class="page gm-page fade-up">
+    <header class="panel view-hero">
+      <div>
+        <p class="view-tag">Matching Lab</p>
+        <h2>专业-岗位匹配分析</h2>
+        <p class="desc">主流程聚焦“专业能力画像”与“社会岗位需求”之间的匹配度评估。</p>
+      </div>
+      <div class="hero-metrics">
+        <article class="hero-card">
+          <p>专业样本</p>
+          <strong>{{ majors.length }}</strong>
+        </article>
+        <article class="hero-card">
+          <p>岗位样本</p>
+          <strong>{{ jobs.length }}</strong>
+        </article>
+        <article class="hero-card">
+          <p>历史记录</p>
+          <strong>{{ historyCount }}</strong>
+        </article>
+      </div>
+    </header>
 
     <p v-if="errorText" class="error">{{ errorText }}</p>
     <p v-if="successText" class="success">{{ successText }}</p>
@@ -719,21 +736,74 @@ onMounted(initialize);
 
 <style scoped>
 .page {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+  overflow: visible !important;
+}
+
+.view-hero {
+  margin-top: 0;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(173, 211, 255, 0.3);
+  background:
+    radial-gradient(circle at 8% 12%, rgba(56, 189, 248, 0.2), transparent 36%),
+    linear-gradient(140deg, rgba(37, 99, 235, 0.2), rgba(15, 23, 42, 0.35));
+}
+
+.view-tag {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  background: rgba(148, 163, 184, 0.2);
+  color: #dbeafe;
+  font-size: 12px;
+}
+
+h2 {
+  margin: 8px 0 0;
+}
+
+.hero-metrics {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hero-card {
+  border: 1px solid rgba(173, 211, 255, 0.24);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-card p {
+  margin: 0;
+  color: #bcd3ee;
+  font-size: 12px;
+}
+
+.hero-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+  color: #f2f8ff;
 }
 
 .desc {
-  color: #4c5a67;
+  margin: 8px 0 0;
+  color: #b5cae3;
 }
 
 .panel {
-  margin-top: 14px;
-  border: 1px solid #dfe7ef;
-  border-radius: 8px;
-  padding: 12px 14px;
-  background: #fafcff;
+  margin-top: 0;
+  padding: 12px;
+  overflow-x: auto;
 }
 
 .form-panel {
@@ -742,19 +812,21 @@ onMounted(initialize);
 }
 
 .panel h3 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
 .collapsible-panel {
   padding: 0;
+  overflow: hidden;
 }
 
 .panel-summary {
   list-style: none;
   cursor: pointer;
   font-weight: 600;
-  padding: 12px 14px;
+  padding: 12px;
   user-select: none;
+  color: #d8e7f8;
 }
 
 .panel-summary::-webkit-details-marker {
@@ -765,7 +837,7 @@ onMounted(initialize);
   content: "▶";
   display: inline-block;
   margin-right: 8px;
-  color: #5f86aa;
+  color: #8fb6dc;
   transform: rotate(0deg);
   transition: transform 0.15s ease;
 }
@@ -775,12 +847,12 @@ onMounted(initialize);
 }
 
 .panel-body {
-  padding: 0 14px 12px;
+  padding: 0 12px 12px;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 10px;
 }
 
@@ -788,15 +860,18 @@ label {
   display: grid;
   gap: 6px;
   font-size: 13px;
+  color: #d2e3f6;
 }
 
 input,
 select,
 textarea {
-  border: 1px solid #c9d6e3;
-  border-radius: 6px;
-  padding: 7px 8px;
+  border: 1px solid rgba(173, 211, 255, 0.32);
+  border-radius: 10px;
+  padding: 8px 10px;
   font: inherit;
+  color: #f5f8ff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 textarea {
@@ -810,39 +885,25 @@ textarea {
 }
 
 button {
-  border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
-  background: #1c5d99;
-  color: #fff;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-button.secondary {
-  background: #6c7a89;
+  border-radius: 10px;
 }
 
 .error {
-  color: #b42318;
+  margin: 0;
 }
 
 .success {
-  color: #067647;
+  margin: 0;
 }
 
 .meta {
-  color: #4c5a67;
+  color: #a8bfd9;
   font-size: 13px;
   margin: 4px 0;
 }
 
 .result-box {
-  border-top: 1px dashed #c9d6e3;
+  border-top: 1px dashed rgba(173, 211, 255, 0.26);
   margin-top: 10px;
   padding-top: 10px;
 }
@@ -854,16 +915,16 @@ button.secondary {
 }
 
 .score-card {
-  border: 1px solid #d6e2ef;
-  border-radius: 8px;
-  padding: 8px;
-  background: #fff;
+  border: 1px solid rgba(173, 211, 255, 0.26);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .score-card h4 {
   margin: 0;
   font-size: 12px;
-  color: #4c5a67;
+  color: #a8bfd9;
 }
 
 .score-card p {
@@ -873,8 +934,8 @@ button.secondary {
 }
 
 .score-card.highlight {
-  border-color: #1c5d99;
-  background: #edf5ff;
+  border-color: rgba(56, 189, 248, 0.5);
+  background: rgba(14, 165, 233, 0.2);
 }
 
 .split {
@@ -887,25 +948,33 @@ button.secondary {
 .plain-list {
   margin: 0;
   padding-left: 18px;
-  color: #2f3a44;
+  color: #d5e6f8;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
+  font-size: 13px;
+  min-width: 900px;
 }
 
 th,
 td {
-  border: 1px solid #e4e9f0;
+  border: 1px solid rgba(173, 211, 255, 0.2);
   padding: 6px 8px;
   text-align: left;
   vertical-align: top;
-  font-size: 13px;
+  white-space: nowrap;
 }
 
 th {
-  background: #f1f5fb;
+  background: rgba(147, 197, 253, 0.14);
+}
+
+@media (max-width: 960px) {
+  .hero-metrics {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

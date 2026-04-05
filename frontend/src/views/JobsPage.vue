@@ -1,5 +1,5 @@
 <template>
-  <section class="page">
+  <section class="page gm-page fade-up">
     <h2>企业与岗位管理</h2>
     <p class="desc">
       本页已接入企业与岗位接口，可进行企业维护与岗位文本要求维护。

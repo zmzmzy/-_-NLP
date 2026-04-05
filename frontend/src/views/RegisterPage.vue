@@ -1,41 +1,46 @@
 <template>
-  <section class="auth-page">
-    <div class="auth-card">
-      <h2>邮箱注册</h2>
+  <section class="auth-screen fade-up">
+    <div class="auth-card auth-single">
+      <header class="auth-head">
+        <p class="small-text">Get started</p>
+        <h2>邮箱注册</h2>
+      </header>
+
       <p class="hint">注册后自动登录，默认角色为普通用户（viewer）。</p>
 
-      <form @submit.prevent="submitRegister">
-        <label>
-          邮箱
+      <form class="auth-form" @submit.prevent="submitRegister">
+        <label class="auth-field">
+          <span>邮箱</span>
           <input v-model.trim="form.email" type="email" placeholder="name@example.com" />
         </label>
 
-        <label>
-          用户名（可选）
+        <label class="auth-field">
+          <span>用户名（可选）</span>
           <input v-model.trim="form.username" type="text" placeholder="留空自动生成" />
         </label>
 
-        <label>
-          密码
+        <label class="auth-field">
+          <span>密码</span>
           <input v-model="form.password" type="password" placeholder="至少 6 位" />
         </label>
 
-        <label>
-          确认密码
+        <label class="auth-field">
+          <span>确认密码</span>
           <input v-model="form.confirmPassword" type="password" placeholder="再次输入密码" />
         </label>
 
         <p v-if="errorText" class="error">{{ errorText }}</p>
         <p v-if="successText" class="success">{{ successText }}</p>
 
-        <button :disabled="loading" type="submit">
+        <button class="submit-btn" :disabled="loading" type="submit">
           {{ loading ? "注册中..." : "注册并登录" }}
         </button>
       </form>
 
-      <p class="links">
+      <p class="auth-bottom">
+        已有账号？
         <router-link to="/login">返回登录</router-link>
-        <span>|</span>
+        <span class="sep">·</span>
         <router-link to="/password">找回密码</router-link>
       </p>
     </div>
@@ -99,86 +104,73 @@ async function submitRegister() {
 </script>
 
 <style scoped>
-.auth-page {
-  min-height: calc(100vh - 40px);
+.auth-screen {
+  min-height: min(760px, calc(100vh - 12px));
   display: grid;
   place-items: center;
+  padding: 18px;
 }
 
-.auth-card {
-  width: min(460px, 92vw);
-  background: #fff;
-  border-radius: 12px;
-  padding: 22px;
-  box-shadow: 0 10px 28px rgba(13, 43, 69, 0.12);
+.auth-single {
+  width: min(540px, calc(100vw - 24px));
+}
+
+.auth-head {
+  margin-bottom: 12px;
+}
+
+.small-text {
+  margin: 0;
+  color: #7d8ca6;
+  font-size: 13px;
 }
 
 h2 {
-  margin: 0;
+  margin: 6px 0 0;
+  font-size: 34px;
+  color: #f5f8ff;
 }
 
 .hint {
-  margin: 8px 0 18px;
-  color: #4c5a67;
-  font-size: 14px;
+  margin: 0 0 16px;
+  color: #9db0cb;
+  font-size: 13px;
 }
 
-form {
+.auth-form {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
-label {
+.auth-field {
   display: grid;
   gap: 6px;
+}
+
+.auth-field span {
   font-size: 14px;
-  color: #22313f;
+  color: #c9d6ec;
 }
 
-input {
-  border: 1px solid #c9d6e3;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
-}
-
-button {
-  border: none;
-  border-radius: 8px;
-  background: #0d2b45;
-  color: #fff;
-  padding: 10px 12px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.error {
-  margin: 0;
-  color: #b42318;
+.auth-bottom {
+  margin: 16px 0 0;
+  text-align: center;
+  color: #9db0cb;
   font-size: 13px;
 }
 
-.success {
-  margin: 0;
-  color: #027a48;
-  font-size: 13px;
+.auth-bottom a {
+  color: #8db4ff;
+  text-decoration: none;
+  font-weight: 600;
 }
 
-.links {
-  margin-top: 14px;
-  font-size: 13px;
-  color: #344054;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.auth-bottom a:hover {
+  color: #b3cfff;
 }
 
-.links a {
-  color: #0d2b45;
+.sep {
+  margin: 0 8px;
+  color: #6f84a5;
 }
 </style>

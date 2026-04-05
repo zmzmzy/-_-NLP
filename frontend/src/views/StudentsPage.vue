@@ -1,5 +1,5 @@
 <template>
-  <section class="page">
+  <section class="page gm-page fade-up">
     <h2>学生与就业记录管理</h2>
     <p class="desc">
       本页已接入学生与就业记录接口，可维护学生基本信息、简历文本以及就业去向记录。

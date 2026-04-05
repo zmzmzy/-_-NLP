@@ -1,15 +1,34 @@
 <template>
-  <section class="page">
-    <h2>专业决策看板</h2>
-    <p class="desc">
-      展示各专业就业对口率、平均匹配分与核心技能缺口，辅助专业建设与招生决策。
-    </p>
+  <section class="page gm-page fade-up">
+    <header class="panel view-hero">
+      <div>
+        <p class="view-tag">Decision Board</p>
+        <h2>专业决策看板</h2>
+        <p class="desc">展示各专业就业对口率、平均匹配分与核心技能缺口，辅助专业建设与招生决策。</p>
+      </div>
+      <div class="hero-metrics">
+        <article class="hero-card">
+          <p>专业数量</p>
+          <strong>{{ majorCount }}</strong>
+        </article>
+        <article class="hero-card">
+          <p>样本学生</p>
+          <strong>{{ totalStudents }}</strong>
+        </article>
+        <article class="hero-card">
+          <p>总体对口率</p>
+          <strong>{{ formatRate(overallAlignmentRate) }}</strong>
+        </article>
+      </div>
+    </header>
 
     <p v-if="errorText" class="error">{{ errorText }}</p>
     <p v-if="successText" class="success">{{ successText }}</p>
 
-    <details class="panel form-panel collapsible-panel">
-      <summary class="panel-summary">筛选条件</summary>
+    <section class="panel form-panel">
+      <div class="section-head">
+        <h3>筛选条件</h3>
+      </div>
       <div class="panel-body">
         <div class="grid">
           <label>
@@ -62,7 +81,7 @@
           {{ alignmentMeta.smoothing_k ?? filters.smoothing_k }}
         </p>
       </div>
-    </details>
+    </section>
 
     <div class="cards">
       <article class="card">
@@ -409,25 +428,78 @@ onMounted(() => {
 
 <style scoped>
 .page {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+  overflow: visible !important;
+}
+
+.view-hero {
+  margin-bottom: 0;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(173, 211, 255, 0.3);
+  background:
+    radial-gradient(circle at 10% 16%, rgba(56, 189, 248, 0.2), transparent 35%),
+    linear-gradient(130deg, rgba(14, 165, 233, 0.16), rgba(15, 23, 42, 0.36));
+}
+
+.view-tag {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  background: rgba(148, 163, 184, 0.2);
+  color: #dbeafe;
+  font-size: 12px;
+}
+
+h2 {
+  margin: 8px 0 0;
+}
+
+.hero-metrics {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hero-card {
+  border: 1px solid rgba(173, 211, 255, 0.24);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-card p {
+  margin: 0;
+  color: #bcd3ee;
+  font-size: 12px;
+}
+
+.hero-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+  color: #f2f8ff;
 }
 
 .desc {
-  color: #4c5a67;
-  margin-bottom: 18px;
+  margin: 8px 0 0;
+  color: #b5cae3;
 }
 
 .panel {
-  margin-bottom: 14px;
+  margin-bottom: 0;
+  padding: 12px;
+  overflow-x: auto;
 }
 
 .form-panel {
-  border: 1px solid #dfe7ef;
-  border-radius: 8px;
-  background: #fafcff;
-  padding: 14px;
+  padding: 0;
 }
 
 .form-panel h3 {
@@ -435,37 +507,8 @@ onMounted(() => {
   font-size: 16px;
 }
 
-.collapsible-panel {
-  padding: 0;
-}
-
-.panel-summary {
-  list-style: none;
-  cursor: pointer;
-  font-weight: 600;
-  padding: 14px;
-  user-select: none;
-}
-
-.panel-summary::-webkit-details-marker {
-  display: none;
-}
-
-.panel-summary::before {
-  content: "▶";
-  display: inline-block;
-  margin-right: 8px;
-  color: #5f86aa;
-  transform: rotate(0deg);
-  transition: transform 0.15s ease;
-}
-
-.collapsible-panel[open] > .panel-summary::before {
-  transform: rotate(90deg);
-}
-
 .panel-body {
-  padding: 0 14px 14px;
+  padding: 0 12px 12px;
 }
 
 .grid {
@@ -478,22 +521,24 @@ label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: #2f3b46;
+  color: #d2e3f6;
   font-size: 13px;
 }
 
 input {
-  border: 1px solid #c8d5e3;
-  border-radius: 6px;
+  border: 1px solid rgba(173, 211, 255, 0.32);
+  border-radius: 10px;
   padding: 8px 10px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f8ff;
 }
 
 select {
-  border: 1px solid #c8d5e3;
-  border-radius: 6px;
+  border: 1px solid rgba(173, 211, 255, 0.32);
+  border-radius: 10px;
   padding: 8px 10px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f8ff;
 }
 
 .actions {
@@ -504,28 +549,12 @@ select {
 
 .meta-hint {
   margin: 10px 0 0;
-  color: #4c5a67;
+  color: #a8bfd9;
   font-size: 13px;
 }
 
 button {
-  border: 1px solid #1f5f99;
-  background: #1f5f99;
-  color: #fff;
-  border-radius: 6px;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-button.secondary {
-  border-color: #9bb1c7;
-  background: #fff;
-  color: #2f3b46;
-}
-
-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+  border-radius: 10px;
 }
 
 .cards {
@@ -536,28 +565,28 @@ button:disabled {
 }
 
 .card {
-  border: 1px solid #dfe7ef;
-  border-radius: 8px;
+  border: 1px solid rgba(173, 211, 255, 0.24);
+  border-radius: 12px;
   padding: 14px;
-  background: #fafcff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .card h3 {
   margin: 0 0 8px;
   font-size: 14px;
-  color: #4c5a67;
+  color: #acc3de;
 }
 
 .value {
   margin: 0;
   font-size: 22px;
-  color: #0d2b45;
+  color: #f3f9ff;
   font-weight: 600;
 }
 
 .score-strong {
   font-weight: 700;
-  color: #1a4f8f;
+  color: #67d4ff;
 }
 
 .small {
@@ -570,19 +599,21 @@ table {
   border-collapse: collapse;
   margin-top: 8px;
   font-size: 13px;
+  min-width: 980px;
 }
 
 th,
 td {
-  border: 1px solid #dfe7ef;
+  border: 1px solid rgba(173, 211, 255, 0.2);
   padding: 8px 10px;
   text-align: left;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 th {
-  background: #f0f5fb;
-  color: #2f3b46;
+  background: rgba(147, 197, 253, 0.14);
+  color: #d7e7f9;
 }
 
 .rate-cell {
@@ -594,7 +625,7 @@ th {
 .rate-bar {
   width: 110px;
   height: 8px;
-  background: #e3edf8;
+  background: rgba(173, 211, 255, 0.28);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -602,7 +633,7 @@ th {
 .rate-bar span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #1f5f99, #2f88d3);
+  background: linear-gradient(90deg, #2563eb, #0ea5e9, #14b8a6);
 }
 
 .gap-grid {
@@ -612,10 +643,10 @@ th {
 }
 
 .gap-card {
-  border: 1px solid #dfe7ef;
-  border-radius: 8px;
+  border: 1px solid rgba(173, 211, 255, 0.24);
+  border-radius: 12px;
   padding: 10px;
-  background: #fcfdff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .gap-card header {
@@ -629,28 +660,26 @@ th {
 
 .gap-card p {
   margin: 4px 0 0;
-  color: #4c5a67;
+  color: #a8bfd9;
   font-size: 12px;
 }
 
 .empty-hint {
   margin: 8px 0 0;
-  color: #6a7b8a;
+  color: #9fb8d3;
 }
 
 .error {
-  margin: 8px 0 12px;
-  color: #c0392b;
+  margin: 0;
 }
 
 .success {
-  margin: 8px 0 12px;
-  color: #1f7a3e;
+  margin: 0;
 }
 
 @media (max-width: 800px) {
-  .page {
-    padding: 14px;
+  .hero-metrics {
+    grid-template-columns: 1fr;
   }
 
   .rate-bar {

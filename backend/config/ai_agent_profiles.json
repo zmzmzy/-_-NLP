@@ -1,0 +1,238 @@
+{
+  "default_profile": "litellm_guarded",
+  "profiles": [
+    {
+      "id": "litellm_guarded",
+      "display_name": "LiteLLM Gateway Guarded",
+      "description": "默认生产链路：后端 -> LiteLLM 网关 -> 多模型路由与回退。",
+      "provider": "litellm",
+      "model": "dashboard-default",
+      "endpoint": "http://127.0.0.1:4000/v1/chat/completions",
+      "api_key_env": "LITELLM_MASTER_KEY",
+      "auth_header": "Authorization",
+      "api_key_prefix": "Bearer ",
+      "api_key_required": true,
+      "api_key_in_query": false,
+      "temperature": 0.2,
+      "max_output_tokens": 1200,
+      "timeout_ms": 60000,
+      "system_preamble": "你服务于高校专业建设和就业质量管理场景，强调结论可执行、可追溯、少空话。",
+      "world_book": [
+        "本系统用于高校专业与岗位匹配分析，不直接替代人工决策。",
+        "输出建议必须基于输入数据证据，不得臆造政策或法规条款。",
+        "所有建议应可由学院、专业负责人在学期内落地执行。"
+      ],
+      "preset_rules": [
+        "先给结论，再给证据，再给行动建议。",
+        "行动建议至少 3 条，且每条包含对象、动作、时间建议。",
+        "若数据样本不足，需要显式提示置信度风险。"
+      ],
+      "role_card": {
+        "name": "高校就业决策助手",
+        "style": "务实、清晰、结果导向",
+        "tone": "专业中性",
+        "objectives": [
+          "识别高风险专业与关键技能缺口",
+          "给出短中期可执行改进动作",
+          "辅助管理者快速理解看板变化"
+        ],
+        "constraints": [
+          "不得输出医学、法律、投资等超域建议",
+          "不得要求提供系统中不存在的敏感个人信息"
+        ]
+      },
+      "rag": {
+        "enabled": true,
+        "knowledge_file": "ai_rag_knowledge.json",
+        "top_k": 4,
+        "max_snippets": 4,
+        "snippet_max_chars": 280
+      }
+    },
+    {
+      "id": "dify_orchestrated",
+      "display_name": "Dify Workflow Orchestrated",
+      "description": "二层编排链路：后端 -> Dify Workflow -> LiteLLM -> 多模型。",
+      "provider": "dify_workflow",
+      "model": "dify-dashboard-insight",
+      "endpoint": "http://127.0.0.1:8080/v1/workflows/run",
+      "api_key_env": "DIFY_API_KEY",
+      "auth_header": "Authorization",
+      "api_key_prefix": "Bearer ",
+      "api_key_required": true,
+      "api_key_in_query": false,
+      "timeout_ms": 90000,
+      "dify_user": "gm-dashboard",
+      "dify_response_mode": "blocking",
+      "dify_output_key": "insight_json",
+      "system_preamble": "你服务于高校专业建设和就业质量管理场景，强调结论可执行、可追溯、少空话。",
+      "world_book": [
+        "Dify 负责流程编排，本后端负责数据快照与审计记录。",
+        "输出建议必须基于输入数据证据，不得臆造政策或法规条款。"
+      ],
+      "preset_rules": [
+        "仅输出 JSON 对象。",
+        "行动建议至少 3 条，且每条建议必须可执行。"
+      ],
+      "role_card": {
+        "name": "高校就业决策编排助手",
+        "style": "流程化、可解释",
+        "tone": "专业"
+      },
+      "rag": {
+        "enabled": true,
+        "knowledge_file": "ai_rag_knowledge.json",
+        "top_k": 4,
+        "max_snippets": 4,
+        "snippet_max_chars": 280
+      }
+    },
+    {
+      "id": "openai_guarded",
+      "display_name": "ChatGPT Guarded",
+      "description": "OpenAI 直连配置，用于网关不可用时应急。",
+      "provider": "openai_compatible",
+      "model": "gpt-4o-mini",
+      "endpoint": "https://api.openai.com/v1/chat/completions",
+      "api_key_env": "OPENAI_API_KEY",
+      "auth_header": "Authorization",
+      "api_key_prefix": "Bearer ",
+      "api_key_required": true,
+      "api_key_in_query": false,
+      "temperature": 0.2,
+      "max_output_tokens": 1200,
+      "timeout_ms": 60000,
+      "system_preamble": "你服务于高校专业建设和就业质量管理场景，强调结论可执行、可追溯、少空话。",
+      "world_book": [
+        "本系统用于高校专业与岗位匹配分析，不直接替代人工决策。",
+        "输出建议必须基于输入数据证据，不得臆造政策或法规条款。"
+      ],
+      "preset_rules": [
+        "先给结论，再给证据，再给行动建议。",
+        "actions 至少 3 条，且每条建议必须可执行。"
+      ],
+      "role_card": {
+        "name": "高校就业决策助手",
+        "style": "务实、清晰、结果导向",
+        "tone": "专业中性"
+      },
+      "rag": {
+        "enabled": true,
+        "knowledge_file": "ai_rag_knowledge.json",
+        "top_k": 4,
+        "max_snippets": 4,
+        "snippet_max_chars": 280
+      }
+    },
+    {
+      "id": "siliconflow_direct",
+      "display_name": "SiliconFlow Direct",
+      "description": "硅基流动直连（OpenAI 兼容），适合国内网络环境。",
+      "provider": "openai_compatible",
+      "model": "Qwen/Qwen2.5-72B-Instruct",
+      "endpoint": "https://api.siliconflow.cn/v1/chat/completions",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "auth_header": "Authorization",
+      "api_key_prefix": "Bearer ",
+      "api_key_required": true,
+      "api_key_in_query": false,
+      "temperature": 0.2,
+      "max_output_tokens": 1200,
+      "timeout_ms": 60000,
+      "system_preamble": "你服务于高校专业建设和就业质量管理场景，强调结论可执行、可追溯、少空话。",
+      "world_book": [
+        "本系统用于高校专业与岗位匹配分析，不直接替代人工决策。",
+        "输出建议必须基于输入数据证据，不得臆造政策或法规条款。"
+      ],
+      "preset_rules": [
+        "先给结论，再给证据，再给行动建议。",
+        "actions 至少 3 条，且每条建议必须可执行。"
+      ],
+      "role_card": {
+        "name": "高校就业决策助手",
+        "style": "务实、清晰、结果导向",
+        "tone": "专业中性"
+      },
+      "rag": {
+        "enabled": true,
+        "knowledge_file": "ai_rag_knowledge.json",
+        "top_k": 4,
+        "max_snippets": 4,
+        "snippet_max_chars": 280
+      }
+    },
+    {
+      "id": "openrouter_guarded",
+      "display_name": "OpenRouter Guarded",
+      "description": "OpenRouter 统一入口（OpenAI 兼容），便于快速切换模型。",
+      "provider": "openai_compatible",
+      "model": "openai/gpt-5.2",
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "auth_header": "Authorization",
+      "api_key_prefix": "Bearer ",
+      "api_key_required": true,
+      "api_key_in_query": false,
+      "temperature": 0.2,
+      "max_output_tokens": 1200,
+      "timeout_ms": 60000,
+      "system_preamble": "你服务于高校专业建设和就业质量管理场景，强调结论可执行、可追溯、少空话。",
+      "world_book": [
+        "本系统用于高校专业与岗位匹配分析，不直接替代人工决策。",
+        "输出建议必须基于输入数据证据，不得臆造政策或法规条款。"
+      ],
+      "preset_rules": [
+        "先给结论，再给证据，再给行动建议。",
+        "actions 至少 3 条，且每条建议必须可执行。"
+      ],
+      "role_card": {
+        "name": "高校就业决策助手",
+        "style": "务实、清晰、结果导向",
+        "tone": "专业中性"
+      },
+      "rag": {
+        "enabled": true,
+        "knowledge_file": "ai_rag_knowledge.json",
+        "top_k": 4,
+        "max_snippets": 4,
+        "snippet_max_chars": 280
+      }
+    },
+    {
+      "id": "gemini_guarded",
+      "display_name": "Gemini Guarded",
+      "description": "Gemini 直连配置，适合作为备用链路。",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+      "api_key_env": "GEMINI_API_KEY",
+      "api_key_required": true,
+      "api_key_in_query": true,
+      "api_key_query_name": "key",
+      "temperature": 0.2,
+      "max_output_tokens": 1200,
+      "timeout_ms": 60000,
+      "system_preamble": "请输出结构化 JSON，优先给出可执行动作。",
+      "world_book": [
+        "分析对象是高校专业建设与岗位匹配，目标是提升就业对口质量。",
+        "应避免给出与数据证据无关的泛化建议。"
+      ],
+      "preset_rules": [
+        "输出必须为 JSON 对象。",
+        "建议条目要有明确动作。"
+      ],
+      "role_card": {
+        "name": "高校决策分析师",
+        "style": "简明",
+        "tone": "专业"
+      },
+      "rag": {
+        "enabled": true,
+        "knowledge_file": "ai_rag_knowledge.json",
+        "top_k": 4,
+        "max_snippets": 4,
+        "snippet_max_chars": 280
+      }
+    }
+  ]
+}

@@ -17,6 +17,10 @@ __pycache__/
 # Local SMTP env (do not commit secrets)
 backend/.env.smtp
 backend/.env.smtp.bat
+backend/.env.ai
+
+# Local AI gateway env
+deploy/litellm/.env
 
 # Job sync runtime data
 tools/job_sync/cache/*

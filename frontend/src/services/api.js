@@ -4,7 +4,7 @@ const TOKEN_KEY = "gm_auth_token";
 
 const api = axios.create({
   baseURL: "/api",
-  timeout: 10000
+  timeout: 90000
 });
 
 api.interceptors.request.use((config) => {

@@ -287,6 +287,38 @@
       - `student_count`（涉及学生人数）
       - `mandatory_count`（必备技能缺口次数）
 
+## 决策看板 AI 解读（v0.6，已实现）
+
+- `GET /dashboard/insight/profiles`
+  - 说明：需要登录态；按当前系统预路由策略，建议管理员角色调用
+  - 行为：返回可用的 AI Agent 配置列表与默认配置
+  - 返回：`data[]`（`id/display_name/provider/model/rag_enabled/endpoint_preview/api_key_env/is_default`）+ `meta.default_profile`
+
+- `POST /dashboard/insight`
+  - 说明：需要登录态；按当前系统预路由策略，建议管理员角色调用
+  - 行为：读取决策看板数据快照并调用受约束的 Agent 模型生成结构化解读
+  - 请求体（可选）：
+    - 范围参数：`scope(all|college|major)`、`college_id`、`major_id`
+    - 看板参数：`algorithm_version`、`alignment_threshold`、`min_students`、`smoothing_k`、`top_n`、`min_gap_count`
+    - Agent 参数：`profile_id`、`focus`（`balanced|alignment|gap|risk|employment`）、`tone`（`neutral|strict|encourage|executive`）、`custom_prompt`
+  - 返回：`data`
+    - `status(success|failed)`、`run_id`（持久化成功时）
+    - `scope/scope_label/target_college_id/target_major_id`
+    - `profile_id/provider/model/latency_ms`
+    - `snapshot`（看板快照）
+    - `insight`（结构化解读）
+    - `retrieved_context`（RAG 召回片段）
+    - `error`（失败时）
+
+- `GET /dashboard/insight/runs`
+  - 说明：需要登录态；按当前系统预路由策略，建议管理员角色调用
+  - 行为：查询 AI 解读历史。若后续放开非管理员权限，接口已支持普通用户仅看本人记录。
+  - 查询参数：
+    - 分页：`page`、`page_size`、`sort_order`
+    - 过滤：`scope`、`status`、`profile_id`、`focus`、`keyword`
+    - `include_payload=true|false`（默认 `true`，控制是否返回完整 `snapshot/insight/retrieved_context`）
+  - 返回：`data[]` + 分页字段（`count/page/page_size/total_pages`）
+
 ## 系统日志（已实现）
 
 - `GET /system-logs`

@@ -1,29 +1,32 @@
 <template>
   <div class="layout">
+    <div class="layout-bg" aria-hidden="true">
+      <div class="aurora"></div>
+      <div class="orb orb-a"></div>
+      <div class="orb orb-b"></div>
+      <div class="orb orb-c"></div>
+      <div class="orb orb-d"></div>
+      <div class="grid-overlay"></div>
+    </div>
+
     <header v-if="showTopbar" class="topbar">
-      <div class="brand">
-        <h1>高校专业与社会岗位匹配系统 v0.4</h1>
-        <p>毕业设计演示版</p>
-      </div>
-      <div class="right-area">
-        <nav>
-          <template v-if="!isViewer">
-            <router-link to="/majors">专业中心</router-link>
-            <router-link to="/jobs">岗位中心</router-link>
-            <router-link to="/match">匹配分析</router-link>
-            <router-link to="/dashboard">决策看板</router-link>
-          </template>
-          <router-link to="/profile">{{ isAdmin ? "审核中心" : "个人主页" }}</router-link>
-        </nav>
-        <div class="user-box">
-          <span class="username">用户：{{ username }}（{{ roleLabel }}）</span>
-          <button :disabled="logoutLoading" @click="handleLogout">
-            {{ logoutLoading ? "退出中..." : "退出登录" }}
-          </button>
-        </div>
+      <nav class="nav">
+        <template v-if="!isViewer">
+          <router-link class="nav-link" to="/major-center">专业中心</router-link>
+          <router-link class="nav-link" to="/job-center">岗位中心</router-link>
+          <router-link class="nav-link" to="/match">匹配分析</router-link>
+          <router-link class="nav-link" to="/dashboard">决策看板</router-link>
+        </template>
+        <router-link class="nav-link" to="/profile">{{ isAdmin ? "审核中心" : "个人主页" }}</router-link>
+      </nav>
+      <div class="user-box">
+        <span class="username">用户：{{ username }}（{{ roleLabel }}）</span>
+        <button class="logout-btn" :disabled="logoutLoading" @click="handleLogout">
+          {{ logoutLoading ? "退出中..." : "退出登录" }}
+        </button>
       </div>
     </header>
-    <main class="content">
+    <main class="content" :class="{ 'content-auth': !showTopbar }">
       <router-view />
     </main>
   </div>
@@ -67,98 +70,194 @@ async function handleLogout() {
 
 <style scoped>
 .layout {
-  font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  position: relative;
+  overflow: hidden;
   min-height: 100vh;
-  background: #f4f6f9;
+  font-family: "Space Grotesk", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.layout-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.aurora {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(59, 130, 246, 0.26), transparent 33%),
+    radial-gradient(circle at 84% 18%, rgba(45, 212, 191, 0.2), transparent 30%),
+    radial-gradient(circle at 16% 86%, rgba(125, 211, 252, 0.2), transparent 32%),
+    linear-gradient(140deg, #060f21 0%, #0c1c34 36%, #0d2940 100%);
+}
+
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  filter: blur(56px);
+  animation: float 7s ease-in-out infinite;
+}
+
+.orb-a {
+  top: 10%;
+  left: 8%;
+  width: 180px;
+  height: 180px;
+}
+
+.orb-b {
+  top: 20%;
+  right: 10%;
+  width: 240px;
+  height: 240px;
+  animation-delay: 0.8s;
+}
+
+.orb-c {
+  bottom: 12%;
+  left: 18%;
+  width: 220px;
+  height: 220px;
+  animation-delay: 1.6s;
+}
+
+.orb-d {
+  right: 18%;
+  bottom: 10%;
+  width: 160px;
+  height: 160px;
+  animation-delay: 2.3s;
+}
+
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 42px 42px;
 }
 
 .topbar {
+  position: sticky;
+  top: 14px;
+  z-index: 20;
+  margin: 14px auto 0;
+  width: min(1320px, calc(100% - 28px));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px 20px;
-  background: #0d2b45;
+  gap: 18px;
+  padding: 14px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(16px);
   color: #fff;
+  box-shadow: 0 14px 36px rgba(3, 8, 26, 0.35);
 }
 
-.brand h1 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.brand p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  opacity: 0.85;
-}
-
-nav {
+.nav {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
-.right-area {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-a {
+.nav-link {
   color: #fff;
   text-decoration: none;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  transition: all 0.24s ease;
 }
 
-a.router-link-active {
-  background: #1c5d99;
+.nav-link:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.nav-link.router-link-active {
+  background: linear-gradient(120deg, rgba(37, 99, 235, 0.84), rgba(14, 165, 233, 0.78));
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 10px 24px rgba(14, 116, 144, 0.38);
 }
 
 .user-box {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .username {
   font-size: 13px;
-  opacity: 0.95;
+  opacity: 0.9;
 }
 
-button {
-  border: 1px solid #5f86aa;
-  background: transparent;
+.logout-btn {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  border-radius: 6px;
-  padding: 6px 10px;
+  border-radius: 9999px;
+  padding: 8px 14px;
   cursor: pointer;
+  transition: all 0.22s ease;
 }
 
-button:disabled {
+.logout-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.logout-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
 
 .content {
-  padding: 20px;
+  position: relative;
+  z-index: 10;
+  width: min(1320px, calc(100% - 28px));
+  margin: 16px auto 0;
+  padding-bottom: 18px;
+}
+
+.content-auth {
+  width: 100%;
+  margin-top: 0;
 }
 
 @media (max-width: 900px) {
   .topbar {
     flex-direction: column;
     align-items: flex-start;
+    top: 10px;
+    margin-top: 10px;
+    border-radius: 18px;
+    padding: 12px 14px;
   }
 
-  .right-area {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .content {
+    width: calc(100% - 16px);
+    margin-top: 10px;
   }
+}
 
-  nav {
-    flex-wrap: wrap;
+@keyframes float {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(12px, -18px, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 </style>

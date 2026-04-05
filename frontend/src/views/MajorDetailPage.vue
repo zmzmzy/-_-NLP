@@ -1,5 +1,5 @@
 <template>
-  <section class="page">
+  <section class="page gm-page fade-up">
     <div class="head-row">
       <button class="secondary" @click="goBack">返回专业列表</button>
       <button class="secondary" :disabled="loading" @click="initialize">刷新</button>
