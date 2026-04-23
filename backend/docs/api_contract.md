@@ -210,11 +210,15 @@
   - 说明：主流程接口（专业-岗位匹配）
   - 请求体（必填）：`major_id`、`job_id`
   - 请求体（可选）：`algorithm_version`（默认 `v0.2-major-job`）、`persist`（默认 `false`）
+  - `algorithm_version` 说明：
+    - `v0.2-major-job` / `v0.1-baseline`：基线算法（Jaccard语义 + 技能重叠 + 约束惩罚）
+    - `v1.0-hybrid-idf`：增强算法（语义覆盖融合 + IDF技能加权 + 约束惩罚）
   - 返回：`semantic_score`、`skill_score`、`constraint_score`、`final_score`、解释字段（`matched_skills` / `missing_skills` / `constraint_failures`）
 - `POST /match/major-job/batch`
   - 说明：主流程批量接口（专业集 × 岗位集）
   - 请求体（必填）：`major_ids`、`job_ids`（数组）
   - 请求体（可选）：`algorithm_version`（默认 `v0.2-major-job`）、`persist`（默认 `false`）
+  - `algorithm_version` 可选：`v0.2-major-job`、`v0.1-baseline`、`v1.0-hybrid-idf`
   - 说明：按专业和岗位做笛卡尔积批量计算，单次最多 `300` 组
   - 返回：`data`（成功结果）+ `failed`（失败结果）+ `summary`
 - `GET /match/major-job/results`
@@ -230,11 +234,13 @@
 - `POST /match/single`
   - 请求体（必填）：`student_id`、`job_id`
   - 请求体（可选）：`algorithm_version`（默认 `v0.1-baseline`）、`persist`（默认 `true`）
+  - `algorithm_version` 可选：`v0.1-baseline`、`v0.2-major-job`、`v1.0-hybrid-idf`
   - 请求体（可选地点约束）：`preferred_location_province`、`preferred_location_city`
   - 返回：`semantic_score`、`skill_score`、`constraint_score`、`final_score`、解释字段（`matched_skills` / `missing_skills` / `constraint_failures`）
 - `POST /match/batch`
   - 请求体（必填）：`student_ids`、`job_ids`（数组）
   - 请求体（可选）：`algorithm_version`、`persist`
+  - `algorithm_version` 可选：`v0.1-baseline`、`v0.2-major-job`、`v1.0-hybrid-idf`
   - 请求体（可选地点约束）：`preferred_location_province`、`preferred_location_city`
   - 说明：按学生和岗位做笛卡尔积批量计算，单次最多 `200` 组
   - 返回：`data`（成功结果）+ `failed`（失败结果）+ `summary`

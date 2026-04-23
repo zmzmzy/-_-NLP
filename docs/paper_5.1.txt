@@ -1,0 +1,2071 @@
+单位代码： 10635
+
+本科毕业论文（设计）
+基于 NLP 处理的高校专业—岗位匹配
+模型及应用可行性研究
+学
+
+院： 计算机信息科学学院 软件学院
+
+专
+
+业： 网络工程
+
+姓
+
+名： 龚炳珲
+
+学
+
+号： 222022321072037
+
+指导教师： 于显平
+答辩日期：
+
+年
+
+20
+
+年
+
+月
+
+月
+
+日
+
+目 录
+
+摘要 .....................................................1
+Abstract .................................................3
+引言 .....................................................1
+第 1 章 绪论 .............................................. 6
+1.1 研究背景和目的 ....................................... 6
+1.2 研究意义 ............................................. 7
+1.3 研究现状 ............................................. 7
+1.3.1 国内研究现状 ....................................... 7
+1.3.2 国外研究现状 ....................................... 8
+第 2 章 相关理论与技术支持 ................................ 9
+2.1 开发工具及技术 ....................................... 9
+2.1.1MySQL 数据库简介 .................................... 9
+2.1.2 B/S 架构与前后端分离思想 ........................... 9
+2.1.3 大模型与智能体编排理论 ............................ 10
+2.1.4 Drogon 框架技术 ................................... 10
+第 3 章 系统需求分析 ..................................... 12
+3.1 场景法分析 .......................................... 12
+3.2 角色与权限 .......................................... 13
+3.3 功能需求分析 ........................................ 15
+3.3.1 专业中心 .......................................... 15
+I
+
+3.3.2 岗位中心 .......................................... 17
+3.3.3 匹配分析中心 ...................................... 19
+3.3.4 审核中心/个人中心关联 ............................. 20
+3.3.5 决策看板 .......................................... 21
+3.3.6 AI/Agent 解读模块 ................................. 22
+3.4 非功能性需求分析 .................................... 22
+3.5 可行性分析 .......................................... 22
+3.6 主要业务流程分析 .................................... 23
+第 4 章 概要设计 ......................................... 23
+4.1 总体技术架构设计 .................................... 24
+4.2 数据库概念与逻辑结构设计 ............................ 25
+4.3 接口与契约设计 ...................................... 29
+4.4 匹配引擎设计 ........................................ 30
+4.4.1 学生-岗位匹配 ..................................... 30
+4.4.2 专业-岗位辅助匹配 ................................. 31
+4.5 决策看板指标体系设计 ................................ 31
+4.6 AI 解读模块设计 ..................................... 36
+4.7 安全与可观测性设计 .................................. 36
+第 5 章 系统的实现与应用 ................................. 38
+5.1 平台开发环境介绍 .................................... 38
+5.2 认证与用户中心实现 .................................. 38
+5.3 专业中心实现 ........................................ 42
+5.4 岗位中心实现 ........................................ 44
+II
+
+5.5 匹配分析中心实现 .................................... 45
+5.6 决策看板实现 ........................................ 46
+5.7 AI 解读功能实现 ..................................... 48
+5.8 审核中心实现 ........................................ 49
+5.9 前端交互 ............................................ 50
+第 6 章 系统测试 ......................................... 52
+6.1 系统测试目的 ........................................ 52
+6.2 测试环境与数据准备 .................................. 52
+6.3 系统功能测试 ........................................ 53
+6.3.1 主数据功能测试 .................................... 53
+6.3.2 导入功能测试 ...................................... 54
+6.3.3 匹配功能测试 ...................................... 55
+6.3.4 看板与 AI 功能测试 ................................. 56
+6.4 接口与异常路径测试 .................................. 57
+6.5 权限与安全测试 ...................................... 57
+6.6 性能与稳定性测试 .................................... 59
+6.7 测试结果分析与问题修复 .............................. 59
+第 7 章 总结 ............................................. 60
+参考文献 ................................................ 62
+致 谢 ................................................... 64
+
+III
+
+基于 NLP 处理的高校专业—岗位匹配模型及应用可行
+性研究
+龚炳珲
+西南大学计算机信息科学学院 软件学院，重庆，400715
+
+摘要高校讨论专业建设时，常常先看到结果，再回头解释原因。毕业去向统计、
+对口率汇总、课程满意度调查都能提供参考，但这些数据大多停在结果层，难以直
+接回答两个更关键的问题：学生为什么与岗位匹配或不匹配；专业培养方案应当朝
+哪个方向调整。岗位需求变化快，课程调整周期长，两端一旦脱节，院系管理就容
+易陷入“知道有问题，却说不清问题在哪”的局面。围绕这一现实场景，本文以高
+校专业建设和就业管理为背景，设计并实现了一个基于 NLP 的人岗匹配分析系统。
+系统采用前后端分离架构，前端使用 Vue3，后端使用 Drogon（C++），核心数据存
+储采用 MySQL 8。平台围绕实际业务拆分为六个中心：专业中心、岗位中心、匹配
+分析中心、审核中心、决策看板和 AI 解读模块。管理者可以先维护学院、专业、
+学生、企业与岗位等主数据，再通过审核流程沉淀较为可靠的就业记录，随后调用
+匹配引擎完成单条匹配、批量匹配和历史重算，最后在看板与 AI 解读页面查看专
+业层指标、技能缺口和结构化建议。匹配算法采用“语义重叠分+技能重叠分+约束
+惩罚系数”的融合思路。语义部分基于专业文本与岗位文本的 token 集合计算
+Jaccard 相似度；技能部分联合结构化技能表与文本推断结果，识别命中技能与缺
+失技能；约束部分针对必备技能缺失和地点偏好偏离进行惩罚。为避免小样本造成
+的判断偏差，系统在专业层指标计算中进一步引入覆盖率、加权均值与平滑估计。
+工程实现重点落在三类问题上。第一，业务链条长，数据容易断裂，因此系统通过
+外键、事务和审核状态机把学生提交、管理员审核、正式落库串成闭环。第二，页
+面多、角色多，信息容易散，所以前端采用“总览页+任务页+历史页”的组织方式，
+把高频操作放在前面，把追踪信息留在后面。第三，AI 接入若缺少约束，很容易输
+出空泛结论，因此本文使用 LiteLLM 网关、受控提示词、RAG 片段召回和结果落库
+机制，让 AI 解读保留证据链，也便于复盘。本文的价值不在于追求一个绝对复杂
+1
+
+的模型，而在于验证一条可落地的路径：先把就业数据整理成可用数据，再把匹配
+结果转化为可解释指标，最后把分析结论转写成管理者能直接采用的建议。现阶段
+系统在样本规模、跨院校泛化和深层语义理解方面仍有提升空间，但从架构设计到
+实际运行结果看，这一路径已经具备本科毕业设计所要求的可运行性、可复现性与
+应用可行性。
+关键字：高校专业建设；就业岗位匹配；自然语言处理；决策看板；LiteLLM
+
+2
+
+Feasibility Study on an NLP-Based Major–Job Matching Model for
+Universities and Its Applications
+GONG Bing-hui
+College of Computer and Information Science, School of Software, Southwest University, Chongqing
+
+400715, PR
+
+China
+
+Abstract：Universities often evaluate majors by observing employment outcomes after they appear,
+but this approach cannot clearly explain why a mismatch occurs or how a training plan should be
+adjusted. Employment statistics, alignment rates, and satisfaction surveys are useful, yet they remain
+largely descriptive. When job requirements change quickly while curricular revision moves slowly,
+universities face a practical gap between talent cultivation and labor-market demand.
+
+To address this problem, this thesis designs and implements an NLP-based job-matching analysis
+system for university management. The system adopts a separated front-end/back-end architecture
+with Vue3, Drogon (C++), and MySQL 8. It consists of six functional centers: major management,
+job management, matching analysis, review workflow, decision dashboard, and AI interpretation.
+The platform supports data maintenance, employment submission review, single and batch matching,
+historical recalculation, dashboard aggregation, and structured AI-assisted interpretation.
+
+The matching engine combines semantic overlap, skill overlap, and constraint penalties. Semantic
+similarity is computed through token-level Jaccard comparison between major-side and job-side
+texts. Skill scoring integrates structured skill tables and text-inferred skills to identify matched and
+missing skills. Constraint scoring penalizes missing required skills and preference deviations.
+
+At dashboard level, weighted averaging, coverage rate, and smoothing are further introduced to
+reduce small-sample bias.From the engineering perspective, this work focuses on three issues:
+maintaining data consistency in long workflows, improving usability under multi-center navigation,
+and making LLM output controllable in real deployment. The system addresses these issues through
+database constraints, transactions, workflow states, task-oriented page organization, LiteLLM
+3
+
+gateway routing, retrieval-augmented prompting, and evidence persistence. The delivered result
+shows that a practical university job-matching system can move from descriptive statistics to a
+collaborative process that combines data, scoring, and explainable AI.
+Key words: university major construction; job matching; natural language processing; decision
+dashboard; LiteLLM
+
+4
+
+引言
+在在数字中国与教育数字化战略持续推进的背景下，高校人才培养质量评价
+正在从只看结果数据的处理模式转向注重过程和程序合理性。于传统管理模式下，
+专业方面与就业结果往往是不同部门管理对应的业务，其中教务部门管理课程体
+系、培养方案等教育相关工作，就业管理部门关注签约率、就业去向、专业对口
+率等等数据；对于企业而言，人事部门对招聘人员的岗位能力要求更新快且时效
+性高，信息差现象严重，难以从社会上及时传导至学校，导致培养方案、专业开
+设等等教育工作容易产生脱节，积重难返，会出现高校教育与社会需求之间存在
+信息滞后、供需不匹配的难题，学校方面难以参考有效数据进行专业、课程、培
+养方案等等工作的调整；企业无法得到符合需求的人才，导致耗费更多社会资源
+培养新人、跟不上新技术发展和带来的效应甚至出现失业下岗潮等等严重社会现
+象，在如今 AI 蓬勃发展的现实情况下，这样的担忧正在逐步变成现实。
+进入信息时代以来，大规模的文本数据在高校管理场景中不断累积。诸如专
+业课程、培养方案、学生简历、项目经历、岗位需求、岗位职责、技能要求等等
+涉及到教育——就业的核心信息本质上仍然是自然语言数据。只通过人工处理的
+话不仅效率低、主观性强，而且还不好量化，难以寻求一个合理的标准进行评定。
+自然语言处理（NLP）技术与 Agent 技术组合的方法可以为这一难题提供可用的解
+[1][2][3]
+
+法
+
+，通过对专业与岗位文本进行科学的、有模型的分析和语义比较，可将以
+
+前的只通过经验判断的工作方式转化为量化指标为主、Agent 辅助理解建议、人工
+审核和评价三大要素综合的科学处理方法，为学生的就业指导、教育工作者的工
+作内容验收和调整提供了新的思路。
+
+5
+
+第 1 章 绪论
+1.1 研究背景和目的
+“人猿相揖别，只几个石头磨过”。AI 技术的发展自从 2022 年开始就以让人
+目瞪口呆的方式飞速迭代，大大超过了包括绝大部分高校和社会企业的预期。自
+Transformer 于 2017 年提出以来，大模型技术在不到十年间快速演进，逐步发
+展出兼具长上下文、推理增强与部分多模态能力的新一代模型，如 Gemini 3.1
+Pro、Claude 4.6 系列、GLM-5 与 DeepSeek-V3.2 等[4]，就对整个社会的产业
+产生了巨大的革新和推动，大量基础简单工作如初级平面设计已经危在旦夕。高
+校专业建设与社会发展速度相比具有更明显的长期性与复杂性：专业培养方案通
+常以级/届为周期推进，调整成本高、影响一整届毕业生；社会就业市场对技术栈、
+工具链和岗位能力的需求变化速度随着 AI 发展更快，传统的高校对口企业的方式
+容易被抛弃。随着社会的信息化程度提高，学校已拥有大量可用于分析的数据，
+例如学生基本信息、就业记录、岗位招聘信息、课程详情与专业画像等。但在多
+数情况下，数据仍停留在简单的记录和表格形式，未形成可供决策参考的标准能
+力。其根本原因在于系统缺乏更新的符合社会发展的数据模型、稳定的匹配算法、
+合理的建议等等机制。从技术发展趋势看，NLP 方法在岗位匹配、文本相似度评估、
+语义检索等任务是很合适的技术选型[1][3][7]；AI 大模型能力使复杂问题通过自然语
+言表达的成本显著下降（百万 token 消耗价值低）。但如果不加调整不个性化处
+理直接将大模型用于高校管理决策，容易出现文不对题、输出风格跳脱、容易受
+到不规范使用或者 prompt 注入污染等问题。因此，将规则约束 Agent、NLP 基础
+算法与高校现有信息进行有机的组装结合，可以作为一个教育工作辅助的发展方
+向。
+
+6
+
+1.2 研究意义
+本课题的直接目标，是设计并实现一个面向高校专业建设与就业管理的人岗
+匹配分析系统。系统要完成三件事：其一，把学院、专业、学生、企业、岗位等
+主数据整理成可持续维护的结构；其二，把专业文本、学生背景与岗位要求转为
+可比较的匹配分和缺口信息；其三，把结果汇总到专业层面，生成适合管理者阅
+读和使用的分析结论。
+从教育管理角度看，这项工作有助于推动专业建设从经验驱动转向证据驱动。
+过去讨论“某专业是否需要调整课程”时，常靠个别教师经验、就业率变化或企
+业访谈印象。本文提出的系统做法更强调证据链：哪些岗位吸纳了学生，哪些技
+能反复缺失，哪些专业的对口率和覆盖率同时偏低，这些都能形成更具体的判断
+依据；从技术实现角度看，本课题也在检验一个问题：Agent 与 NLP 结合，是否适
+合嵌入高校管理系统。很多场景里，AI 输出看起来流畅，却难以控制、难以追责。
+本文选择的思路更克制——先算分、先聚合、先留痕，再生成解释。这样处理未
+必看上去最炫酷，但更接近真实管理场景需要的稳定性和可审计性。
+
+1.3 研究现状
+1.3.1 国内研究现状
+国内高校近年已经在就业质量分析、专业评估和教学数据整合方面积累了不
+少实践。常见做法包括毕业去向统计、行业分布分析、对口率核算、课程满意度
+调查等。一些学校还建设了数据中台，能把教务、学工和就业数据接入统一平台。
+[10][11][12][13]
+
+从管理视角看，这些工作并非无效，相反，它们为后续分析打下了基础
+
+。
+
+问题也很明显。第一，很多系统重统计、轻解释。看板能告诉管理者“今年
+某专业就业率下降了几个点”，却很难进一步说明：是岗位需求变了，还是学生
+技能结构不匹配。第二，很多系统重展示、轻闭环。页面上能看到指标，却看不
+到改动建议，更看不到调整后是否真的起效。第三，部分 AI 应用还停在咨询或文
+7
+
+案辅助层面，比如简历润色、岗位推荐、问答助手，而用于院系治理决策的可控
+输出机制仍然不够成熟。
+技术路线方面，国内高校项目多采用 Java 或 Python 作为后端，Vue 或 React
+作为前端，MySQL 或 PostgreSQL 作为数据存储。这些路线成熟、资料丰富、交付
+稳定。近几年，随着高性能 C++服务框架和 AI 工作流需求增加，Drogon 这类方案
+也开始进入视野。它对异步接口、并发请求和本地化部署更友好，适合对响应效
+率和服务稳定性有要求的管理系统。
+1.3.2 国外研究现状
+[5]
+
+国外高校和研究机构较早引入 Learning Analytics 等理念 ，强调多源数据
+融合、长期跟踪和因果解释。一部分工作关注课程路径与就业结果的相关性，另
+一部分工作更关心能力框架与岗位标准之间的映射关系。和单次统计相比，这类
+研究更强调连续观察：学生在课程阶段积累的能力，最终怎样投射到就业结果中。
+企业招聘平台与职业分析平台则更早把语义检索、技能图谱、知识图谱和排
+序模型用于岗位匹配。它们不只看关键词是否重合，还尝试判断能力是否可以迁
+移、求职者是否具备成长潜力。国外一些平台把“技能本体化”做得很细，岗位
+要求和能力标签之间的关联也更规范。但这些成果直接搬到国内高校，并不现实。
+语言环境不同，岗位分类口径不同，隐私合规边界也不同。更重要的是，高校治
+理场景强调本地可部署、结果可追踪、权限可控制，这与通用招聘平台的产品逻
+辑不完全一样。因此，本文在借鉴国外“数据驱动+解释导向”思路的同时，仍坚
+持本地可运行、模型可替换、过程可审计的工程方案。
+
+8
+
+第 2 章 相关理论与技术支持
+2.1 开发工具及技术
+2.1.1MySQL 数据库简介
+在当下的编程数据库之中，MySQL 数据库是当下使用人群最广最为安全便捷的
+一款关系型数据库。MySQL 8 作为系统核心存储，支持事务、外键约束、JSON 字
+段与多索引组合，满足“结构化主数据+半结构化解释数据”的混合存储需求。而
+且 MySQL 数据库代码是开源的，用户可以随时查看数据库的代码。MySQL 数据库还
+是一款完全免费的关联型数据库，它把数据存储在不同的表中，通过每个表中的
+主键进行关联，这样提高了数据调出和使用的速度也在一定的方面提高了数据的
+灵活性。MySQL 数据库具有更好的兼容性，在不同的操作系统之中都可以完美的使
+用。MySQL 数据库具有体积小、速度快和成本低的优点，它还可以同时处理成千上
+万条数据，所以深受用户的喜爱。
+2.1.2 B/S 架构与前后端分离思想
+高校管理系统面向的用户群体复杂，既有管理员，也有学院教师、就业工作
+人员和学生。B/S 架构的优势正在这里体现出来：浏览器就是统一入口，部署集中，
+维护成本低，跨平台访问也方便。对管理系统来说，这种方式往往比厚客户端更
+实用。在此基础上，本项目采用通用前后端分离模式。前端负责页面展示、交互
+控制和参数组织，后端负责认证、业务规则、数据访问和匹配计算，双方通过 REST
+API 通信。这样划分带来几个直接好处：页面可以快速迭代，不会频繁影响后端逻
+辑；接口可以单独测试，问题定位更清楚；不同业务中心也能并行开发。对于毕
+业设计项目而言，这种结构还能更完整地展示工程能力，而不只是停留在页面效
+果层面。
+
+9
+
+2.1.3 大模型与智能体编排理论
+在管理决策场景中，大模型应用的关键不是“生成多少文字”，而是“是否
+[14][15]
+
+受控、是否可追溯、是否可落地
+
+”。本系统采用“受控提示+检索增强+结构
+
+化输出”的策略：
+（1）受控提示：通过 system preamble、world book、preset rules、role card
+约束输出边界。
+（2）检索增强（RAG）：从本地知识文件召回高相关片段，减少无依据推断。
+（3）结构化输出：强制返回
+`summary/highlights/risks/actions/confidence/evidence`字段，保证机器可
+读。
+（4）过程留痕：保存 prompt、原始响应、上下文片段与最终结构化结果，支
+持审计。
+在模型接入层，LiteLLM 作为统一网关提供模型路由与 fallback；Dify 作为
+可选二层编排器，负责可视化流程和策略分支。该架构兼顾灵活性与稳定性，便
+于在不同供应商、不同额度与不同网络条件下持续运行。
+
+2.1.4 Drogon 框架技术
+后端框架方面，本文选择 Drogon。它是一个面向现代 C++的高性能 Web 应用
+框架，底层基于 Trantor 网络库，采用事件驱动和非阻塞 I/O 机制，适合构建
+RESTful API 服务。对于本课题来说，选择 Drogon 并不是为了炫技，而是看中了
+它在接口组织、异步处理和本地部署上的稳定表现。
+从工程角度看，Drogon 提供了路由、控制器、过滤器、数据库访问、配置化
+启动和日志支持，这些能力足以支撑管理系统的常见后端需求。认证、参数校验、
+异常处理等横切逻辑可以下沉到过滤器或公共层，业务接口就能保持相对清晰。
+
+10
+
+系统后续若要继续扩展 AI 网关接入、批量任务或审计追踪，也有足够的余地。对
+毕业设计而言，这一点很重要：项目不仅能跑，还能看出扩展方向。
+
+11
+
+第 3 章 系统需求分析
+3.1 场景法分析
+本系统服务的不是单一用户，而是一条围绕“专业建设—学生就业—岗位反
+馈”的业务链。专业负责人关心培养目标与岗位需求是否对齐；就业工作人员更
+关心就业质量是否提升、数据是否完整；学院管理者关注的是哪些专业风险高、
+哪些技能缺口需要优先补；学生则更在意自己与目标岗位的差距到底在哪里。不
+同角色的问题并不一样，但它们依赖的事实基础高度重合，因此，系统不能只做
+简单的增删改查，也不能只做一页看板，需要先维护主数据，再沉淀审核后的就
+业记录，再把这些数据送入匹配引擎，最后把分散结果聚合成能被不同角色读取
+的判断依据。换句话说，这不是一个单点工具，而是一条带反馈能力的业务链。
+
+图 1.1 业务流程图
+Figure 1.1 Business Process Diagram
+12
+
+3.2 角色与权限
+根据当前系统实现，核心角色包括：1. 管理员（admin）：可进行全局主数
+据维护、导入、审核、删除与系统级查询；2. 教师/工作人员（teacher）：可进
+行业务操作但受部分权限约束；3. 查看者/学生（viewer）：可访问个人中心，
+进行学生档案绑定与就业提交。权限模型遵循“最小必要原则”：公开接口仅保
+留健康检查与认证入口，其余接口默认需要登录。管理员能力与普通用户能力在
+审核、强制删除、批量管理等操作上有明确边界。
+
+13
+
+图 1.2 角色权限示意图
+Figure 1.2 Role Permission
+
+14
+
+3.3 功能需求分析
+3.3.1 专业中心
+专业中心负责学院、专业、专业画像和学生信息的统一管理。它需要支持学
+院与专业的基础维护，支持专业画像文本编辑，也要支持按学院、专业和学号检
+索学生记录。导入能力同样重要，因为这类主数据往往来自历史表格。实际使用
+中，管理员往往会先在预览页看错误行，再决定是否整批应用，这个小动作很像
+细节，却直接影响系统是否好用。
+
+15
+
+图 1.3 专业中心流程图
+Figure 1.3 major-center
+16
+
+3.3.2 岗位中心
+岗位中心面向企业与岗位主数据。系统需要维护企业基本信息、行业与领域
+描述，也要保存岗位职责、技能要求、工具平台等关键文本。导入时不能只看是
+否导入成功，还要能定位具体错误行。否则，岗位名称进库了，职责字段却空着，
+后面的匹配分很容易失真。
+
+17
+
+图 1.4 就业/岗位中心流程图
+Figure 1.3job-center
+
+18
+
+3.3.3 匹配分析中心
+匹配分析中心是系统的核心。它至少要支持学生—岗位单条匹配、学生—岗
+位批量匹配、专业—岗位辅助匹配、历史结果检索和结果删除。更重要的是，接
+口不能只返回一个总分，还要返回语义分、技能分、约束分、命中技能、缺失技
+能和失败项。管理者真正需要的不是“这个分数高不高”，而是“为什么高、为
+什么低”。
+
+图 1.5 匹配分析流程图
+Figure 1.5 matching and analysis
+
+19
+
+3.3.4 审核中心/个人中心关联
+就业信息的可信度直接决定看板和匹配结果是否有意义。为此，系统设置“学
+生提交—管理员审核—正式落库”的流程。学生可以绑定档案后提交就业信息，
+既支持选择已有企业岗位，也支持先填写候选企业和候选岗位。管理员通过后，
+系统再生成正式就业记录；若驳回，系统要求填写意见并保留痕迹。这样一来，
+数据来源、审核动作和最终记录可以前后对上。
+
+图 1.6 审核流程图
+Figure 1.6 Review process Diagram
+20
+
+3.3.5 决策看板
+决策看板负责把离散数据转换为专业层面的比较指标。它需要展示就业率、
+对口率、匹配均分、覆盖率、专业排名和技能缺口，同时支持阈值、样本门槛、
+TopN 等参数调整。看板不应只是“展示结果”，还要帮助管理者判断哪些专业需
+要优先关注。
+
+图 1.7 决策看板需求流程图
+Figure 1.6 Decision Kanban Requirements Flowchart
+
+21
+
+3.3.6 AI/Agent 解读模块
+AI/Agent 模块承担的是结构化解释任务。它需要支持 profile 选择、focus
+设置、语气选择和自定义要求，输出结果应当是结构化 JSON，而不是随意扩写的
+自由文本。系统还要保留 prompt、原始响应、RAG 片段和最终解读结果，便于追
+溯。只有过程可见，AI 输出才有机会真正进入管理场景。
+
+3.4 非功能性需求分析
+系统运行在教学管理后台场景，并发规模中等，因此性能目标不必夸张，但
+响应也不能拖沓。常规 CRUD 接口应保持稳定延迟，单条匹配应在可接受时间内返
+回，批量任务需要对组合规模做限制，避免长时间阻塞。
+可靠性方面，关键写操作需要事务支持；导入过程要有预检机制；错误响应必
+须尽量清楚，方便定位问题。安全方面，接口需要分级认证，敏感配置通过环境
+变量注入，AI 调用链路尽量减少不必要信息传递。可维护性方面，路由组织、接
+口契约、启动脚本、测试脚本和排障文档都要尽量完整，否则项目能做出来，却
+很难稳定交付。
+3.5 可行性分析
+从技术角度看，Vue3、Drogon 和 MySQL 都属于成熟方案，能够支撑中小规模
+管理系统。匹配算法采用可解释的基线方法，避免依赖高算力训练；AI 模块通过
+网关化接入，便于后续切换模型服务，因此整体技术风险可控。
+
+从经济角度看，系统核心组件均可在普通开发机上部署运行。开源框架降低
+了许可成本，多模型网关又让模型调用具备一定弹性，适合预算有限的本科毕业
+设计场景。
+22
+
+从操作角度看，前端按业务域拆分页面，导入、审核、匹配、看板和 AI 解读
+均有明确入口。非技术用户经过简单说明即可上手，这一点对实际演示和应用很
+关键。
+
+从合规角度看，系统主要处理教学与就业信息。通过角色权限、审核流程和
+日志留痕，项目在一定程度上降低了数据滥用风险；AI 解读也被限制在业务分析
+边界内，不直接输出超出场景的建议。
+3.6 主要业务流程分析
+系统的关键流程可概括为五条链路。第一条是专业建设链：学院维护—专业
+维护—专业画像维护—学生信息完善。第二条是就业入库链：学生提交—管理员
+审核—正式就业记录生成。第三条是匹配分析链：选择对象—计算分数—查看解
+释—结果留档。第四条是决策看板链：设置参数—聚合指标—识别风险—制定动
+作。第五条是 AI 解读链：生成快照—召回上下文—调用模型—结构化存档。五条
+链路共同构成系统的数据闭环，也构成本文后续设计与实现的主线。
+
+图 1.8 总体业务流程分析
+Figure 1.8 Overall business process analysis Diagram
+23
+
+第 4 章 概要设计
+4.1 总体技术架构设计
+系统采用四层结构。表现层由 Vue3 前端构成，负责页面展示、参数输入和交
+互反馈；服务层由 Drogon 后端承担，负责认证、业务规则、匹配计算和 AI 调用；
+数据层采用 MySQL 8，保存主数据、过程数据、结果数据和审计信息；智能分析扩
+展层则包括 LiteLLM 网关、可选 Dify 编排和本地 RAG 知识库。
+部署方式上，前端通过 Vite 提供开发与演示入口，/api 请求代理到后端；后
+端统一暴露 REST 接口；AI 请求默认先发到本地 LiteLLM 网关，再由网关转发到具
+体模型供应方。这样的设计把模型能力和业务接口隔开：前端无需感知模型更换，
+后端也不必把某个供应商写死在核心流程里。
+
+图 2.1 总体架构设计
+Figure 2.1 Architecture design diagram
+
+24
+
+4.2 数据库概念与逻辑结构设计
+系统数据库包含多张核心表，可概括为六类。第一类是认证与审计表，包括
+users、system_logs、password_reset_tokens。第二类是教育主数据表，包括
+universities、colleges、majors、major_profiles。第三类是岗位主数据表，
+包括 companies、jobs。第四类是导入过程表，包括 major_import_batches、
+major_import_rows、job_import_batches、job_import_rows。第五类是学生就
+业与匹配表，包括 students、employment_records、employment_submissions、
+skills、major_skills、job_skills、match_results、major_job_match_results、
+major_alignment_snapshots。第六类是 AI 解读历史表，即
+dashboard_insight_runs。
+关系设计以一致性为优先。专业与学院、学生与专业、岗位与企业、就业与
+学生/企业/岗位都通过外键建立联系。审核流程中，employment_submissions 与
+employment_records 通过 approved_employment_record_id 实现追溯；AI 解读历
+史则通过 snapshot_json、insight_json、prompt_text 和 raw_response_text 保
+存输入、输出和证据，便于回看。主要信息和关系表如下图所示（图 2.2-图 2.6）：
+
+25
+
+图 2.2 用户登录认证与审计数据库关系
+Figure 2.2 Relationship between User Login Authentication and Audit Database
+
+26
+
+图 2.3 用户登录认证与审计数据库关系
+Figure 2.3 Relationship between Colleges, Majors, Students, and Details Database
+
+27
+
+图 2.4 就业信息数据库关系
+Figure 2.4 Relationship of Employment Information Database
+
+图 2.5 专业/学生/岗位分析匹配数据库关系
+Figure 2.5 Analysis and matching of database relationships between majors/students/jobs
+28
+
+图 2.6 AI 解读功能数据库关系
+Figure 2.6 Database Relationships for AI Interpretation Function
+
+4.3 接口与契约设计
+系统接口统一以/api 为前缀，采用 Bearer Token 认证。公开接口仅保留健康
+检查与认证入口，列表接口统一支持分页、排序与关键词检索。错误响应使用统
+一结构，包含 error、error_code 和 error_detail。看似只是格式统一，但它能
+显著降低联调和测试成本：前端能复用一套请求处理逻辑，测试脚本也能按统一
+口径断言。
+
+29
+
+图 2.7 接口/API 关系示意图
+Figure 2.7 Interface/API Relationship Diagram
+
+4.4 匹配引擎设计
+4.4.1 学生-岗位匹配计算思路
+为提高高校专业、学生能力画像与岗位需求之间的匹配精度，本文设计了一
+个版本化的学生—岗位匹配方法。学生侧文本由专业名称、专业描述、课程与技
+能画像、学生简历和项目经历拼接得到；岗位侧文本由岗位标题、职责、项目、
+技能要求和企业画像拼接得到。语义分通过 Jaccard 相似度计算[6]，结果映射到
+0—100 区间；技能分综合结构化技能表与文本推断技能进行融合计算[7]，统计命
+中技能与缺失技能；约束分初始为 1.0，若必备技能缺失或地点偏好不一致，则进
+行惩罚。
+在语义层，记得到学生文本的 token 集合��和岗位文本的 token 集合 ��。
+
+得到语义分定义公式：
+
+30
+
+�sem = 100 ×
+
+|�� ∩ �� |
+|�� ∪ �� |
+
+该指标能够从整体上反映两类文本在内容表达上的接近程度。
+在技能层，设岗位技能集合为��，其中岗位对技能 �的权重记为 ��,� ，学生
+
+对技能 � 的对应权重记为 ��,� 。技能匹配分定义为：
+�skill = 100 ×
+
+�∈��
+
+min
+
+�∈��
+
+(��,� , ��,� )
+��,�
+
+为保证专业对口率，除语义与技能因素外，匹配结果还受到显性约束条件影
+响。设约束因子为�，其初值为 1.0。当学生缺失必备技能或岗位地点与学生就业
+偏好不一致时，对 � 进行惩罚修正。最终匹配得分定义为：
+
+�����_����� = �sem ⋅ �sem + �skill ⋅ �skill ⋅ �
+
+其中，Baseline 版本取�sem = 0.55,
+0.60,
+
+�skill = 0.45，HybridIdf 版本取�sem =
+
+�skill = 0.40，约束因子� ∈ [0,1]。
+
+4.4.2 专业-岗位辅助匹配
+专业-岗位匹配逻辑与学生-岗位类似，但不含学生个体信息。该能力主要用
+于专业侧宏观分析，不作为主口径，但在看板和对比分析中作为目的和分析结果
+的一部分。
+4.4.3 匹配算法代码
+语义与技能分计算：（app_suport.cc,line 1500）
+double computeSemanticScore(const std::unordered_set<std::string> &majorTokens,
+const std::unordered_set<std::string> &jobTokens,
+MatchAlgorithmProfile profile) {
+const double jaccard = jaccardScore(majorTokens, jobTokens) * 100.0;
+if (profile == MatchAlgorithmProfile::HybridIdf) {
+const double tokenCoverage = coverageScore(majorTokens, jobTokens) * 100.0;
+return clampValue(0.65 * jaccard + 0.35 * tokenCoverage, 0.0, 100.0);
+}
+
+31
+
+return clampValue(jaccard, 0.0, 100.0);
+}
+double computeSkillScore(
+const std::unordered_map<std::string, WeightedSkill> &majorSkills,
+const std::unordered_map<std::string, WeightedSkill> &jobSkills,
+Json::Value &matchedSkills,
+Json::Value &missingSkills,
+int &missingMandatoryCount) {
+matchedSkills = Json::Value(Json::arrayValue);
+missingSkills = Json::Value(Json::arrayValue);
+missingMandatoryCount = 0;
+if (jobSkills.empty()) {
+return 0.0;
+}
+double totalWeight = 0.0;
+double matchedWeight = 0.0;
+for (const auto &[key, jobSkill] : jobSkills) {
+const double jobWeight = std::max(0.001, jobSkill.weight);
+totalWeight += jobWeight;
+Json::Value item;
+item["skill_id"] = static_cast<Json::Int64>(jobSkill.skillId);
+item["skill_name"] = jobSkill.name;
+item["job_weight"] = roundTo3(jobWeight);
+item["mandatory"] = jobSkill.mandatory;
+const auto it = majorSkills.find(key);
+if (it == majorSkills.end()) {
+if (jobSkill.mandatory) {
+++missingMandatoryCount;
+}
+missingSkills.append(item);
+continue;
+}
+const auto majorWeight = std::max(0.001, it->second.weight);
+const double coveredWeight = std::min(jobWeight, majorWeight);
+matchedWeight += coveredWeight;
+item["major_weight"] = roundTo3(majorWeight);
+item["covered_weight"] = roundTo3(coveredWeight);
+32
+
+matchedSkills.append(item);
+}
+if (totalWeight <= 0.0) {
+return 0.0;
+}
+return clampValue((matchedWeight / totalWeight) * 100.0, 0.0, 100.0);
+}
+double computeSkillScoreWithIdf(
+const std::unordered_map<std::string, WeightedSkill> &majorSkills,
+const std::unordered_map<std::string, WeightedSkill> &jobSkills,
+const std::unordered_map<long long, double> &skillIdfWeights,
+Json::Value &matchedSkills,
+Json::Value &missingSkills,
+int &missingMandatoryCount) {
+matchedSkills = Json::Value(Json::arrayValue);
+missingSkills = Json::Value(Json::arrayValue);
+missingMandatoryCount = 0;
+if (jobSkills.empty()) {
+return 0.0;
+}
+double totalWeight = 0.0;
+double matchedWeight = 0.0;
+for (const auto &[key, jobSkill] : jobSkills) {
+const double baseJobWeight = std::max(0.001, jobSkill.weight);
+const auto idfIt = skillIdfWeights.find(jobSkill.skillId);
+const double idfWeight = idfIt == skillIdfWeights.end() ? 1.0 : std::max(0.1,
+idfIt->second);
+const double adjustedJobWeight = baseJobWeight * idfWeight;
+totalWeight += adjustedJobWeight;
+Json::Value item;
+item["skill_id"] = static_cast<Json::Int64>(jobSkill.skillId);
+item["skill_name"] = jobSkill.name;
+item["job_weight"] = roundTo3(baseJobWeight);
+item["idf_weight"] = roundTo3(idfWeight);
+item["adjusted_job_weight"] = roundTo3(adjustedJobWeight);
+item["mandatory"] = jobSkill.mandatory;
+const auto it = majorSkills.find(key);
+if (it == majorSkills.end()) {
+33
+
+if (jobSkill.mandatory) {
+++missingMandatoryCount;
+}
+missingSkills.append(item);
+continue;
+}
+const auto majorWeight = std::max(0.001, it->second.weight);
+const double adjustedMajorWeight = majorWeight * idfWeight;
+const double coveredWeight = std::min(adjustedJobWeight, adjustedMajorWeight);
+matchedWeight += coveredWeight;
+item["major_weight"] = roundTo3(majorWeight);
+item["adjusted_major_weight"] = roundTo3(adjustedMajorWeight);
+item["covered_weight"] = roundTo3(coveredWeight);
+matchedSkills.append(item);
+}
+if (totalWeight <= 0.0) {
+return 0.0;
+}
+return clampValue((matchedWeight / totalWeight) * 100.0, 0.0, 100.0);
+}
+
+总分计算器：（app_suport.cc,line 1741）
+result.constraintScore = 1.0;
+if (missingMandatoryCount > 0) {
+const double factor = std::max(0.2, 1.0 - 0.2 *
+static_cast<double>(missingMandatoryCount));
+result.constraintScore *= factor;
+for (Json::ArrayIndex i = 0; i < result.missingSkills.size();
+++i) {
+if (!result.missingSkills[i]["mandatory"].asBool()) {
+continue;
+}
+Json::Value item;
+item["type"] = "mandatory_skill";
+item["message"] = "missing mandatory skill";
+item["skill_name"] =
+result.missingSkills[i]["skill_name"].asString();
+result.constraintFailures.append(item);
+34
+
+}
+}
+const auto expectedProvince = trimCopy(preferredProvince);
+const auto expectedCity = trimCopy(preferredCity);
+if (!expectedProvince.empty() && !jobProvince.empty() &&
+!equalsIgnoreCaseTrimmed(expectedProvince, jobProvince)) {
+result.constraintScore *= 0.9;
+Json::Value item;
+item["type"] = "location_province";
+item["message"] = "preferred province does not match job
+province";
+item["preferred_province"] = expectedProvince;
+item["job_province"] = jobProvince;
+result.constraintFailures.append(item);
+}
+if (!expectedCity.empty() && !jobCity.empty() &&
+!equalsIgnoreCaseTrimmed(expectedCity, jobCity)) {
+result.constraintScore *= 0.9;
+Json::Value item;
+item["type"] = "location_city";
+item["message"] = "preferred city does not match job city";
+item["preferred_city"] = expectedCity;
+item["job_city"] = jobCity;
+result.constraintFailures.append(item);
+}
+result.constraintScore =
+roundTo3(clampValue(result.constraintScore, 0.0, 1.0));
+const double semanticWeight = algorithmProfile ==
+MatchAlgorithmProfile::HybridIdf ? 0.60 : 0.55;
+const double skillWeight = 1.0 - semanticWeight;
+const double fused = semanticWeight * result.semanticScore +
+skillWeight * result.skillScore;
+result.finalScore = roundTo3(clampValue(fused *
+result.constraintScore, 0.0, 100.0));
+
+35
+
+4.5 决策看板指标体系设计
+[8][9][10]
+
+看板围绕“就业质量+对口质量+解释能力”构建指标体系
+
+，核心指标包
+
+括 employment_rate、alignment_rate、coverage_rate、
+weighted_avg_match_score、raw_major_score、excellent_graduate_score 和
+top_gap_skills。对口率通常由 final_score 是否超过阈值决定，覆盖率用来判
+断匹配结果是否具有足够样本支撑，加权均分和平滑分则用来降低小样本带来的
+波动。
+系统之所以没有只保留一个“综合分”，是因为单一分数很容易误导判断。
+某专业的就业率可能不低，但对口率偏低；也可能平均分尚可，但覆盖率不足。
+把这些指标拆开，管理者才能看见真正需要处理的是哪一段；同时多变量多分数
+更适合 Agent 的多目标处理思路，得出的建议也往往更全面。
+
+4.6 AI 解读模块设计
+AI 解读模块由数据快照层、受控生成层和结果标准化层组成。数据快照层负
+责打包看板参数、范围、核心指标、风险专业和缺口技能；受控生成层负责注入
+system preamble、world book、preset rules、role card，并结合 RAG 片段调
+用模型；结果标准化层则将返回内容整理为结构化字段并保存运行历史。
+系统保存 profile_id、provider、model、latency、status、error_message，
+同时记录 prompt_text 和 raw_response_text。这样做的意义很直接：当 AI 结论
+出现偏差时，开发者与不同用户都能回到具体输入和原始输出，而不是停留在“模
+型似乎说错了”的模糊判断上。
+4.7 安全与可观测性设计
+系统在安全上采用统一认证和角色权限控制，数据库外键与状态枚举共同限
+制非法流程；导入与审核采取分阶段执行，避免错误数据直接写入正式表。可观
+36
+
+测性方面，关键接口统一返回错误结构，日志记录关键操作，AI 链路额外保留调
+用痕迹，便于定位 network_failure、quota、auth 等问题。
+此外，项目对本地代理环境也做了处理。若 127.0.0.1 请求被错误代理，前
+后端联调和 AI 链路都可能出现误报。为此，文档和脚本中给出了 NO_PROXY 配置
+建议。这个细节并不显眼，但真正调试时很有价值，可以避免因为环境配置问题
+浪费精力和资源。
+
+37
+
+第 5 章 系统的实现与应用
+5.1 平台开发环境介绍
+（1）平台的硬件环境：
+操作系统:Ubuntu22.04
+存储：200GB
+内存：8GB
+数据库：MySQL
+开发的语言： C++11、Python、Vue3、MySQL
+（2）软件环境：
+电脑操作系统： Ubuntu22.04
+网络协议： HTTPS 协议
+（3）项目构成：
+项目采用统一仓库组织，目录包含 frontend/、backend/、db/、docs/、tools/
+等部分。Linux 环境中可通过 start_linux.sh 完成后端构建、前端启动和可选 AI
+环境加载。
+在工程实践中，系统同时提供手动启动和一键启动两种方式。手动方式适合
+调试某个单独模块，一键方式更适合集成验收。配置项通过环境变量注入，覆盖
+数据库、SMTP 和 AI 网关信息，避免把敏感内容写进源码，同时降低硬编码带来的
+风险和麻烦。
+5.2 认证与用户中心实现
+认证模块实现注册、登录、会话查询、登出和找回密码等能力。密码找回通
+过 SMTP 发送验证码，后端记录 token 有效期和使用状态。系统默认不预置管理员
+账号，而是由实际用户创建后再提升权限，这样更符合安全最小化原则。
+38
+
+前端路由层设置了登录守卫。未登录用户访问受保护页面时会被重定向到登
+录页；viewer 角色则被限制在个人中心范围内。路径控制和接口控制同时存在，
+既改善前端体验，也减少越权访问风险。
+前端界面实现如图 3.1 所示：
+
+39
+
+40
+
+41
+
+图 3.1 认证与个人中心前端页面示意图
+Figure 3.1 Authentication and Personal Center Front-End Page Diagram
+
+5.3 专业中心实现
+专业中心采用“总览页+学院管理+专业管理+学生管理+导入中心”的结构。
+学院管理支持新增、编辑、删除与查询；专业管理支持专业与学院关联、专业画
+像维护和详情跳转；学生管理支持按学院、专业和学号筛选；导入中心支持模板
+下载、预览校验、批次应用和历史追踪；在页面交互上，系统尽量把高频动作放
+在显眼位置。比如筛选区和列表区分离，操作按钮统一为“查看/编辑/删除”，
+导入页先展示预检结果，再允许用户决定是否应用。
+前端界面实现如图 3.2 所示：
+
+42
+
+图 3.2 专业中心前端页面示意图
+Figure 3.1 Professional Center Front-End Page Diagram
+43
+
+5.4 岗位中心实现
+岗位中心围绕企业与岗位主数据展开。企业管理页面维护主营业务、产品、
+领域和行业描述；岗位管理页面维护职责、项目、技能要求和工具平台等字段。
+导入能力与专业中心保持一致，用户不需要在不同模块间重新学习一套流程。
+岗位文本质量直接影响匹配结果。因此，系统在实现时特别强调“可读文本
+完整性”。岗位名称只是入口，真正参与计算的是职责说明、技能要求、工具链
+和企业画像。若这些字段为空，再复杂的匹配算法也很难给出可信结果。
+前端界面实现如图 3.3 所示：
+
+44
+
+图 3.3 岗位中心前端页面示意图
+Figure 3.3 Job Center Front-End Page Diagram
+
+5.5 匹配分析中心实现
+匹配分析中心被拆分为总览、单条匹配、批量匹配、全量重算和历史记录多
+个页面。单条匹配适合快速查看某名学生与某个岗位的得分及缺口；批量匹配适
+合横向对比多个学生或岗位；历史页支持按对象、时间和算法版本检索结果。答
+辩演示时，先在单条匹配页展示“为什么这个学生和这个岗位只拿到 60 多分”，
+再切到缺口技能和约束项，往往比直接报总分更有说服力。
+后端匹配接口返回语义分、技能分、约束分和最终分，同时返回命中技能、
+缺失技能与失败项。这种多个变量的设计思路能让系统不仅能“算分”，还能“解
+释分数”。
+45
+
+前端界面实现如图 3.4 所示：
+
+图 3.4 匹配分析中心前端页面示意图
+Figure 3.4 Matching Analysis Center Front-end Page Illustration
+
+5.6 决策看板实现
+决策看板分为总览、排名和缺口三类页面。总览页展示核心指标与风险提示，
+排名页展示专业综合分排序，缺口页聚焦专业技能缺口 TopN。用户可以通过阈值、
+样本门槛和 TopN 参数调整观察口径，比较不同专业或不同时间下的结果变化。考
+虑到样本量差异，系统在看板后端引入置信度分级和平滑估计，避免某些样本很
+少的专业因个别记录而被异常放大。对管理者而言，这比“谁排第一、谁排最后”
+这样简单的排名比对更重要，因为它直接影响系统的判断是否稳妥。
+前端界面实现如图 3.5 所示：
+
+46
+
+47
+
+图 3.5 决策看板前端页面示意图
+Figure 3.5 Dashboard Front-End Page Diagram
+
+5.7 AI 解读功能实现
+AI 解读页面允许用户选择 profile、范围、focus、tone 以及自定义要求。提
+交后，后端先生成看板快照，再调用 AI 链路。系统默认推荐 litellm_guarded 配
+置，通过 LiteLLM 路由到可用模型；必要时也能切换到其他配置，以适应不同环
+境和预算；后端在构建提示词时，会自动加入系统预设、规则约束、角色卡和 RAG
+片段，并要求模型严格返回 JSON 对象。若模型输出结构异常，系统会执行兜底处
+理，保证前端仍能正常展示摘要、风险与行动建议。与此同时，snapshot_json、
+retrieved_context_json、insight_json、prompt_text 和 raw_response_text 都
+[14][15]
+
+会写入历史表，方便后续审计与复盘
+
+。
+
+48
+
+前端界面实现如图 3.6 所示：
+
+图 3.6 AI 解读功能前端页面示意图
+Figure 3.6 AI Interpretation Function Front-end Page Illustration
+
+5.8 审核中心实现
+审核能力融合在个人中心与管理员审核页中，与个人中心联动。学生端可提
+交就业记录，既能选择已有企业岗位，也能补录候选企业和候选岗位；管理员审
+核通过后，系统自动完成去重、主数据补齐和正式就业记录写入；若审核驳回，
+系统要求填写理由并保留痕迹。这样处理后，数据的来源、审核过程和落库结果
+能对应起来，看板和匹配引擎也才有较可靠的数据基础。
+49
+
+前端界面实现如图 3.7 所示：
+
+图 3.7 管理员审核功能页面示意图
+Figure 3.7 Administrator approval function Page Diagram
+
+5.9 前端交互总结
+项目后期对前端视觉做了统一调整。代替原先的简单 HTML+CSS 的框架，页面
+采用卡片化分层、渐变背景和动态状态反馈，整体风格尽量保持清爽和克制，不
+再堆砌宣传性元素。结构上，各中心页保持一致的“导航骨架+顶部筛选+主体任
+务区+历史追踪区”布局，减少用户跨模块切换时的认知负担。
+50
+
+登录页面也做了精简，去掉了与后台管理场景关系不大的冗余说明，把焦点
+留在账户输入和核心动作上，页面一打开，用户知道下一步做什么，不会先被大
+段文案分散注意力。
+
+51
+
+第 6 章 系统测试
+6.1 系统测试目的
+每一个系统或者程序在编写完成之后都要进行一部最为重要的工作，那就是
+系统的测试。在系统的测试的过程之中可以发现很多在程序编写之初没有考虑到
+的问题和一些不合理的功能设计。其系统的测试就是在模拟用户的使用的过程，
+通过模拟用户的设用过程从中发现问题并改正问题。
+系统测试的目标不只是“看看能不能跑”，而是验证核心功能、权限边界、
+异常处理和整体稳定性是否符合预期。管理系统一旦投入使用，用户最先感受到
+的往往不是算法，而是流程是否顺、报错是否清楚、数据会不会莫名消失。因此，
+测试需要覆盖正常路径，也要覆盖异常路径。
+本项目采用“自动化脚本+人工场景复核”的组合方式。前者负责持续验证核
+心链路，后者负责检查交互体验和业务流程是否符合实际操作习惯。
+6.2 测试环境与数据准备
+系统的测试可以分为一下的集中形式，其中包括系统的功能测试、系统的集
+成测试和系统的确认测试。其中最为常见的就是系统的功能测试，通过模拟用户
+使用系统的功能操作的详细的步骤实现对系统的所有的功能模块进行一个详细的
+功能测试，从中发现在用户的使用的过程之中功能模块是否可以顺利的进行数据
+的处理和用户请求的获取还有就是是否可以成功的响应用户的请求。
+测试环境基于安装在 Vmware 的 Ubuntu 22.04 虚拟机开发机，数据库为 MySQL
+8。数据准备分为完整样本和最小样本两类：完整样本用于看板、匹配和审核等全
+流程复核，最小样本用于快速回归。测试前需要确认本机代理环境，避免 127.0.0.1
+请求被错误转发；AI 链路测试还需要核对网关密钥与模型额度是否可用。
+
+52
+
+自动化测试由 run_local_tests.sh 驱动，串联后端构建、数据库重建、健康检查、
+集成冒烟和异常路径验证。人工测试则重点覆盖登录、导入、单条匹配、批量匹
+配、看板查看和 AI 解读等高频场景。
+
+6.3 系统功能测试
+6.3.1 主数据功能测试
+主数据测试主要检查学院、专业、学生、企业和岗位的新增、编辑、删除、
+查询与详情展示是否正常。测试结果表明，系统能够按预期完成基础维护操作，
+筛选、分页和详情跳转链路稳定。对于非法参数和缺失字段，系统能够返回明确
+错误提示。测试用例见表 1.1：
+表 1.1 主要数据功能测试用例
+Table 1.1 Main Data Function Test Cases
+用例编号
+
+TC-MD-01
+
+TC-MD-02
+
+测试内容
+学院列表分
+页查询
+
+学院新增
+
+操作步骤
+
+期望结果
+
+管理员调用
+
+返回 200，
+
+/colleges?page=1&pa
+
+列表与分页
+
+ge_size=5
+
+字段完整
+
+调用 POST
+
+返回 201，
+
+/colleges 提交
+
+生成新学院
+
+code/name/description
+
+ID
+
+调用 PUT
+TC-MD-03
+
+学院编辑
+
+/colleges/{id} 修改名
+
+返回 200，
+
+对无下级数据学院执
+
+返回 200，
+
+（无依赖）
+
+行 DELETE
+
+删除成功
+
+POST /companies 提
+
+返回 201，
+
+交企业基本信息
+
+生成企业 ID
+
+POST /jobs 绑定企业
+
+返回 201，
+
+企业新增
+
+TC-MD-06
+
+岗位新增
+
+分页正常
+
+返回 201，
+成功创建
+
+通过
+
+通过
+
+返回 200，
+详情页可见
+
+通过
+
+更新值
+
+学院删除
+
+TC-MD-05
+
+返回 200，
+
+结论
+
+数据更新
+
+称
+TC-MD-04
+
+实际结果
+
+53
+
+返回 200
+
+通过
+
+返回 201
+
+通过
+
+返回 201，
+
+通过
+
+TC-MD-07
+
+学生新增
+
+TC-MD-08
+
+并提交岗位字段
+
+岗位可查询
+
+列表可见
+
+POST /students 提交
+
+返回 201，
+
+返回 201，
+
+学号与专业信息
+
+学号唯一
+
+创建成功
+
+返回 400，
+
+返回 400，
+
+提示缺失字
+
+错误信息明
+
+段
+
+确
+
+参数缺失校
+
+缺失必填字段提交新
+
+验
+
+增请求
+
+通过
+
+通过
+
+6.3.2 导入功能测试
+导入测试关注模板校验、错误行定位、预览显示和批次应用。测试过程中，
+系统能够识别必填字段缺失、字段格式异常和重复记录等常见问题，并在预览阶
+段给出反馈。管理员可在确认后再执行批量应用，导入历史也可追溯。测试用例
+见表 1.2：
+表 1.2 导入功能测试用例
+Table 1.2 Import Function Test Cases
+用例编号
+TC-IMP-0
+1
+
+TC-IMP-0
+2
+
+TC-IMP-0
+3
+
+TC-IMP-0
+4
+TC-IMP-0
+
+测试内容
+
+操作步骤
+
+专业导入
+
+POST
+
+预检（有
+
+/majors/import/previe
+
+效）
+
+w，1 行合法 CSV
+
+专业导入
+应用（有
+效批次）
+
+期望结果
+返回 201，
+valid_rows=1
+
+POST
+
+返回 200，写入成
+
+/majors/import/apply
+
+功
+
+major_name 置空
+
+专业导入
+应用（无
+效批次）
+岗位导入
+
+summary.valid
+
+返回 200
+
+invalid_rows=1，
+
+误信息为必填
+
+记录错误行
+对 valid_rows=0 批次
+
+返回 409，拒绝应
+
+执行 apply
+
+用
+
+POST
+
+返回 201，
+54
+
+通过
+
+_rows=1
+
+返回 201，错
+
+效）
+
+结论
+
+返回 201，
+
+返回 201，
+
+专业导入
+预检（无
+
+实际结果
+
+通过
+
+通过
+
+字段缺失
+返回 409，提
+示“no valid
+
+通过
+
+rows to apply”
+返回 201，
+
+通过
+
+5
+
+预检（有
+
+/jobs/import/preview，
+
+效）
+
+1 行合法 CSV
+
+valid_rows=1
+
+summary.valid
+_rows=1
+返回 201，错
+
+TC-IMP-0
+6
+
+岗位导入
+
+返回 201，
+
+company_name 置空
+
+预检（无
+
+invalid_rows=1
+
+效）
+
+误
+“company_n
+
+通过
+
+ame is
+required”
+
+TC-IMP-0
+7
+
+岗位导入
+
+对无效批次执行
+
+返回 409，阻断写
+
+apply
+
+入
+
+应用（无
+效批次）
+
+返回 409
+
+通过
+
+6.3.3 匹配功能测试
+匹配功能测试包括单条匹配、批量匹配和全量重算。测试结果显示，系统能
+够返回语义分、技能分、约束分和最终分，同时给出命中技能、缺失技能和失败
+项说明。对同一组输入重复调用时，结果口径保持一致，说明核心计算逻辑具备
+基本稳定性。测试用例见表 1.3：
+表 1.3 匹配功能测试用例
+Table 1.3 Matching Function Test Cases
+测试内
+用例编号
+
+结
+操作步骤
+
+期望结果
+
+实际结果
+
+容
+专业-岗
+TC-MAT-
+
+位单条
+
+01
+
+（基
+线）
+
+论
+POST /match/major-job，
+algorithm_version=v0.2major-job
+
+返回分项分数和
+
+返回 200，
+
+通
+
+最终分
+
+final_score=61.914
+
+过
+
+专业-岗
+TC-MAT-
+
+位单条
+
+02
+
+（增
+
+返回 200，
+
+同输入改
+返回可比对分值
+
+为 v1.0-hybrid-idf
+
+，较基线 +0.254
+
+强）
+TC-MAT-
+
+专业-岗
+
+final_score=62.168
+
+major_ids=[1,2],
+
+返回 summary 与
+55
+
+返回 200，
+
+通
+过
+
+通
+
+03
+
+位批量
+
+job_ids=[1,2]
+
+成功条目
+
+success_count=4
+
+学生-岗
+TC-MAT-
+
+位单条
+
+设置偏好地点与岗位地
+
+constraint_score<1
+
+04
+
+（约束
+
+点不一致
+
+且有失败项
+
+POST
+
+返回
+
+/match/major/1/recomput
+
+success/failed 汇
+
+e
+
+总
+
+专业内
+
+05
+
+重算
+
+TC-MAT-
+
+匹配历
+
+按 algorithm_version 过
+
+06
+
+史查询
+
+滤
+
+TC-MAT07
+
+重复调
+用一致
+
+constraint_score=0.
+
+通
+过
+
+返回 200，
+
+通
+
+success_count=1
+
+过
+
+返回对应版本记
+
+返回 200，过滤生
+
+通
+
+录
+
+效
+
+过
+
+结果口径一致，无
+
+同输入连续调用 20 次
+
+返回 200，
+
+81，2 条约束失败
+
+惩罚）
+TC-MAT-
+
+过
+
+异常漂移
+
+通
+
+20 次请求均成功
+
+过
+
+性
+
+6.3.4 看板与 AI 功能测试
+看板测试主要检查指标聚合、参数变化和页面联动。AI 功能测试重点观察快
+照生成、模型调用、结构化输出和历史落库。测试结果表明，当输入参数变化时，
+看板能够按新的口径重新聚合；AI 解读能根据快照生成结构化结论，并保留调用
+痕迹。对格式异常的模型返回，系统也能完成兜底处理。测试用例见表 1.4：
+表 1.4 导入功能测试用例
+Table 1.4 Dashboard and AI Functionality Test Cases
+
+测试内
+用例编号
+
+容
+专业对
+
+TC-DAS-01
+
+齐看板
+查询
+
+操作步骤
+
+期望结果
+返回专业
+
+GET
+/dashboard/major-alignment
+
+56
+
+聚合指标
+列表
+
+实际结果
+
+返回 200，data 行
+数 24
+
+结论
+
+通过
+
+技能缺
+TC-DAS-02
+
+口看板
+查询
+
+TC-DAS-03
+
+TC-AI-01
+
+TC-AI-02
+
+TC-AI-03
+
+返回各专
+
+GET
+/dashboard/major-skill-gaps
+
+业 TopN
+
+返回 200，data 行
+数 23
+
+缺口
+
+参数变
+
+调
+
+指标按新
+
+返回结果随参数
+
+更联动
+
+整 alignment_threshold/top_n
+
+参数重算
+
+变化
+
+AI 配
+
+GET
+
+返回可用
+
+返回 200，profile
+
+置列表
+
+/dashboard/insight/profiles
+
+profile 和
+
+数 6，默
+
+默认项
+
+认 litellm_guarded
+
+返回结构
+
+返回 201，
+
+化结果并
+
+status=success，
+
+留痕
+
+latency_ms=13360
+
+AI 解
+
+POST /dashboard/insight
+
+读生成
+
+（scope=major）
+
+AI 历
+史查询
+
+返回分页
+GET /dashboard/insight/runs
+
+历史，可
+
+通过
+
+通过
+
+通过
+
+返回 200，历史可
+
+通过
+
+通过
+
+查
+追溯
+
+6.4 接口与异常路径测试
+异常路径测试覆盖未登录访问、参数缺失、无效 ID、导入异常、重复提交和
+AI 调用失败等场景。结果显示，系统能够以统一结构返回错误信息，前端可以据
+此完成提示或回退。对于网络失败、认证失败和额度不足等 AI 常见异常，日志中
+也保留了必要信息，便于排查。测试用例见表 1.5：
+表 1.5 接口与异常路径测试用例
+Table 1.5 APIs and Exception Paths Test Cases
+用例编号
+TC-NEG-01
+
+异常场景
+未登录访问受
+保护接口
+
+触发方式
+
+期望结果
+
+实际结果
+
+结论
+
+GET /system-logs（无 token）
+
+返回 401
+
+返回 401
+
+通过
+
+返回 400
+
+返回 400
+
+通过
+
+POST
+TC-NEG-02
+
+参数类型错误
+
+/match/major-job 中 major_id=\
+"x\"
+57
+
+TC-NEG-03
+
+TC-NEG-04
+TC-NEG-05
+
+TC-NEG-06
+
+TC-NEG-07
+
+空批量审核请
+求
+
+导入无效批次
+应用
+忘记密码外部
+
+AI 链路异常
+
+/admin/employment-submission
+
+返回 400
+
+返回 400
+
+通过
+
+删除存在下级数据的学院
+
+返回 409
+
+返回 409
+
+通过
+
+valid_rows=0 批次执行 apply
+
+返回 409
+
+返回 409
+
+通过
+
+返回 200
+
+返回 200
+
+或 503 且
+
+（本次环
+
+不崩溃
+
+境）
+
+返回可识
+
+本次为成
+
+别失败状
+
+功，失败
+
+态并记录
+
+场景脚本
+
+日志
+
+可复现
+
+s/batch-approve，ids=[]
+
+依赖冲突删除
+
+依赖不确定
+
+POST
+
+POST /auth/password/forgot
+
+模型不可用或超时
+
+兜底
+
+通过
+
+通过
+
+6.5 权限与安全测试
+权限测试重点验证不同角色的访问边界。未登录用户不能进入受保护页面；
+viewer 角色不能访问管理员操作入口；普通工作人员无法执行高权限删除和审核
+动作。敏感配置通过环境变量注入，源码中未出现明文密钥。整体看，系统已具
+备基础的权限隔离能力。测试用例见表 1.6：
+表 1.6 权限与安全测试用例
+Table 1.6 Permissions and Security Test Cases
+用例编号
+TC-SEC-01
+
+TC-SEC-02
+
+TC-SEC-03
+
+测试内容
+
+操作步骤
+
+匿名访问受
+
+不带 token 访
+
+保护资源
+
+问 /colleges
+
+viewer 越权
+
+viewer token
+
+访问管理员
+
+访
+
+日志
+
+问 /system-logs
+
+管理员访问
+
+admin token 访
+
+管理员接口
+
+问 /system-logs
+58
+
+期望结果
+
+实际结果
+
+结论
+
+返回 401
+
+返回 401
+
+通过
+
+返回 403
+
+返回 403
+
+通过
+
+返回 200
+
+返回 200
+
+通过
+
+TC-SEC-04
+
+角色隔离验
+
+viewer 尝试审
+
+被拒绝
+
+证
+
+核接口
+
+（403/401）
+
+登录后访
+
+返回当前用
+
+返回 200，用
+
+问 /auth/me
+
+户信息
+
+户信息正确
+
+检查源码是否
+
+不应出现明
+
+未检出明文
+
+硬编码密钥
+
+文密钥
+
+API 密钥
+
+TC-SEC-05
+
+会话校验
+
+TC-SEC-06
+
+密钥扫描
+
+被拒绝
+
+通过
+
+通过
+
+通过
+
+6.6 性能与稳定性测试
+在常规教学管理后台负载下，系统的 CRUD 接口和单条匹配接口响应稳定。批
+量任务由于组合规模受到限制，未出现明显阻塞。连续执行导入、审核、匹配和
+看板查询时，服务能够保持正常运行。对毕业设计规模的应用场景而言，系统性
+能满足需求。性能采样结果见表 2.1：
+表 2.1 性能采样结果
+Table 2.1 Performance Sampling Results
+指标
+
+请求次数
+
+平均耗时
+
+P95 耗时
+
+结论
+
+GET /api/health
+
+20
+
+0.68 ms
+
+0.90 ms
+
+健康检查稳定
+
+20
+
+7.32 ms
+
+8.53 ms
+
+POST
+/api/match/major-job
+
+单条匹配响应
+稳定
+
+6.7 测试结果分析与问题修复
+测试过程中，项目发现并修复了三类较典型问题。第一类是导入字段口径不
+统一，容易引发预检误判，后续通过模板约束和字段映射进行了修正。第二类是
+前端多页面跳转后状态保留不足，影响连续操作体验，后续通过页面结构调整和
+状态管理优化进行改进。第三类是 AI 回复偶发格式漂移，影响前端渲染，后续通
+过提示词约束和兜底解析降低了风险。总体来看，系统主要流程已经具备较好的
+可用性和稳定性。
+
+59
+
+第 7 章 总结
+本文围绕高校专业建设与就业管理中的一个实际问题展开：学校拥有越来越
+多的数据，却未必能把数据及时转成专业调整与就业指导的依据。为回应这一问
+题，本文设计并实现了一个基于 NLP 的人岗匹配分析系统，并将主数据治理、匹
+配计算、指标聚合与 AI 解读组织进同一条业务链中。与单纯的统计报表相比，这
+套系统更强调过程完整、结果可解释和动作可追溯。
+
+从实现结果看，系统已经能够完成学院、专业、学生、企业和岗位等主数据
+维护，能够通过审核流程沉淀就业记录，能够对学生与岗位执行单条和批量匹配，
+也能够在专业层面生成就业率、对口率、匹配均分与技能缺口等指标。AI 解读模
+块则在受控提示、RAG 召回和历史落库机制支持下，把技术结果进一步整理为结构
+化建议。这样一来，管理者看到的不只是“某个指标升了还是降了”，还能看到
+可能原因与后续动作。
+
+本文更想说明的一点是，管理系统中的“解释质量”并不比“计算结果”次
+要。一个分数若不能说明来源，就很难进入真实决策；一个建议若没有证据链，
+也很难获得使用者信任。正因如此，本文没有一味追求复杂模型，而是优先构建
+稳定的数据闭环和可复核的分析过程。这个选择或许不够激进，却更适合高校治
+理场景。
+
+当然，当前系统仍有边界。匹配能力目前仍以领域规则与文本相似度融合为
+主，面对跨学科新兴岗位、弱结构描述和长期效果追踪时，还有提升空间。后续
+工作可以从三个方向继续推进：一是引入更强的语义表示与技能本体；二是接入
+更丰富的外部岗位数据源；三是建立长期追踪机制，把专业调整动作与后续就业
+60
+
+结果对应起来。总体而言，本课题已经证明：在高校专业建设与就业服务场景中，
+数据治理、匹配分析与受控 AI 结合，具备明确的现实意义与应用可行性。
+
+61
+
+参考文献
+[1] 祖月芳，凌海风，吕永顺。基于 NLP 技术的装备故障文本匹配算法研究[J].兵
+器装备工程学报，2021，11:204-208.
+[2] 吴新中，董仕奇．高校毕业生就业质量评价要素及体系建构[J]．科技进步与
+对策，2017，34(4)：140-144．
+[3] 周璇，赵鸣，刘波涛。基于 BERT 的多模型融合的文本相似度匹配方法研究[J].
+电脑编程技巧与维护，2025，5 :48-50.
+[4] Vaswani, A., Shazeer, N., Parmar, N., et al. Attention Is All You Need. Advances
+in Neural Information Processing Systems, 2017.
+[5] Ferguson, R. (2012). Learning analytics: drivers, developments and challenges.
+International Journal of Technology Enhanced Learning, 4(5/6), 304–317. DOI:
+0.1504/IJTEL.2012.051816.
+[6] 茅倩．中文网络招聘语料的技能词识别与分析[D]．桂林：桂林电子科技大学，
+2021．
+[7] 刘涛．基于预训练语言模型的自然语言理解方法研究[D]．哈尔滨：黑龙江大
+学，2021．
+[8] 李海波，张睿，张志明，等．基于大数据技术的大学生就业技能需求分析系统
+[J]．工业控制计算机，2022，35(10)：127-130．
+[9] 刘小杰．基于数据驱动的高校毕业生就业率预测研究[J]．现代电子技术，2021，
+44(5)：127-131．
+[10]王少丽．大数据在高校精准化就业服务工作中的运用[J]．中国管理信息化，
+2021，24(04)：199-200．
+[11]陈铁权．基于大数据技术的决策型智慧校园系统设计[J]．船舶职业教育，2021，
+9(6)：35-38．
+[12]翟元兴．民办本科高校大学生就业质量管理研究[D]．南昌：江西财经大学，
+2021．
+[13]李志杰．职业测评平台的设计与实现[D]．北京：北京邮电大学，2021．
+[14]孙斐．大模型提示词工程的进展、综述及展望[J]．计算机应用文摘，2024，
+40(18)：179-182．
+62
+
+[15]李子骏，肖辉，李雪峰．面向知识密集型任务的检索增强生成技术综述[J]．微
+电子学与计算机，2025，42(10)：48-65.
+
+63
+
+致 谢
+/*致谢*/
+
+64
+
+65
+
+

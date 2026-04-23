@@ -435,6 +435,28 @@ std::string normalizeAlgorithmVersion(const std::string &raw) {
     return version;
 }
 
+enum class MatchAlgorithmProfile {
+    Baseline,
+    HybridIdf
+};
+
+MatchAlgorithmProfile resolveAlgorithmProfile(const std::string &algorithmVersion) {
+    const auto version = toLowerAscii(trimCopy(algorithmVersion));
+    if (version.empty()) {
+        return MatchAlgorithmProfile::Baseline;
+    }
+    if (version == "v1.0-hybrid-idf" ||
+        version == "v1.1-hybrid-idf" ||
+        version == "hybrid-idf" ||
+        version == "hybrid") {
+        return MatchAlgorithmProfile::HybridIdf;
+    }
+    if (version.find("hybrid") != std::string::npos || version.find("idf") != std::string::npos) {
+        return MatchAlgorithmProfile::HybridIdf;
+    }
+    return MatchAlgorithmProfile::Baseline;
+}
+
 bool equalsIgnoreCaseTrimmed(const std::string &left, const std::string &right) {
     return toLowerAscii(trimCopy(left)) == toLowerAscii(trimCopy(right));
 }
@@ -1258,6 +1280,60 @@ double jaccardScore(const std::unordered_set<std::string> &left,
     return static_cast<double>(inter) / static_cast<double>(uni);
 }
 
+double coverageScore(const std::unordered_set<std::string> &candidate,
+                     const std::unordered_set<std::string> &required) {
+    if (required.empty()) {
+        return 0.0;
+    }
+    size_t inter = 0;
+    for (const auto &token : required) {
+        if (candidate.find(token) != candidate.end()) {
+            ++inter;
+        }
+    }
+    return static_cast<double>(inter) / static_cast<double>(required.size());
+}
+
+std::unordered_map<long long, double> loadSkillIdfWeights(const drogon::orm::DbClientPtr &db) {
+    using Clock = std::chrono::steady_clock;
+    static std::mutex cacheMutex;
+    static std::unordered_map<long long, double> cachedWeights;
+    static Clock::time_point cachedAt = Clock::time_point{};
+    constexpr auto kCacheTtl = std::chrono::seconds(300);
+
+    const auto now = Clock::now();
+    {
+        std::lock_guard<std::mutex> lock(cacheMutex);
+        if (!cachedWeights.empty() && (now - cachedAt) < kCacheTtl) {
+            return cachedWeights;
+        }
+    }
+
+    double totalJobs = 1.0;
+    const auto totalRows = db->execSqlSync("SELECT COUNT(*) AS cnt FROM jobs");
+    if (!totalRows.empty()) {
+        totalJobs = std::max(1.0, static_cast<double>(totalRows[0]["cnt"].as<long long>()));
+    }
+
+    std::unordered_map<long long, double> weights;
+    const auto freqRows = db->execSqlSync(
+        "SELECT skill_id, COUNT(DISTINCT job_id) AS job_cnt "
+        "FROM job_skills GROUP BY skill_id");
+    for (const auto &row : freqRows) {
+        const auto skillId = row["skill_id"].as<long long>();
+        const auto jobCount = std::max(0LL, row["job_cnt"].as<long long>());
+        const double idf = std::log(1.0 + totalJobs / (1.0 + static_cast<double>(jobCount)));
+        weights[skillId] = std::max(0.1, idf);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(cacheMutex);
+        cachedWeights = weights;
+        cachedAt = now;
+    }
+    return weights;
+}
+
 std::string jsonToCompactString(const Json::Value &value) {
     Json::StreamWriterBuilder builder;
     builder["indentation"] = "";
@@ -1408,6 +1484,30 @@ std::unordered_map<std::string, WeightedSkill> inferSkillMapFromText(
     return out;
 }
 
+void mergeInferredSkills(std::unordered_map<std::string, WeightedSkill> &base,
+                         const std::unordered_map<std::string, WeightedSkill> &inferred) {
+    if (base.empty()) {
+        base = inferred;
+        return;
+    }
+    for (const auto &[key, skill] : inferred) {
+        if (base.find(key) == base.end()) {
+            base.emplace(key, skill);
+        }
+    }
+}
+
+double computeSemanticScore(const std::unordered_set<std::string> &majorTokens,
+                            const std::unordered_set<std::string> &jobTokens,
+                            MatchAlgorithmProfile profile) {
+    const double jaccard = jaccardScore(majorTokens, jobTokens) * 100.0;
+    if (profile == MatchAlgorithmProfile::HybridIdf) {
+        const double tokenCoverage = coverageScore(majorTokens, jobTokens) * 100.0;
+        return clampValue(0.65 * jaccard + 0.35 * tokenCoverage, 0.0, 100.0);
+    }
+    return clampValue(jaccard, 0.0, 100.0);
+}
+
 double computeSkillScore(
     const std::unordered_map<std::string, WeightedSkill> &majorSkills,
     const std::unordered_map<std::string, WeightedSkill> &jobSkills,
@@ -1459,6 +1559,65 @@ double computeSkillScore(
     return clampValue((matchedWeight / totalWeight) * 100.0, 0.0, 100.0);
 }
 
+double computeSkillScoreWithIdf(
+    const std::unordered_map<std::string, WeightedSkill> &majorSkills,
+    const std::unordered_map<std::string, WeightedSkill> &jobSkills,
+    const std::unordered_map<long long, double> &skillIdfWeights,
+    Json::Value &matchedSkills,
+    Json::Value &missingSkills,
+    int &missingMandatoryCount) {
+    matchedSkills = Json::Value(Json::arrayValue);
+    missingSkills = Json::Value(Json::arrayValue);
+    missingMandatoryCount = 0;
+
+    if (jobSkills.empty()) {
+        return 0.0;
+    }
+
+    double totalWeight = 0.0;
+    double matchedWeight = 0.0;
+
+    for (const auto &[key, jobSkill] : jobSkills) {
+        const double baseJobWeight = std::max(0.001, jobSkill.weight);
+        const auto idfIt = skillIdfWeights.find(jobSkill.skillId);
+        const double idfWeight = idfIt == skillIdfWeights.end() ? 1.0 : std::max(0.1, idfIt->second);
+        const double adjustedJobWeight = baseJobWeight * idfWeight;
+        totalWeight += adjustedJobWeight;
+
+        Json::Value item;
+        item["skill_id"] = static_cast<Json::Int64>(jobSkill.skillId);
+        item["skill_name"] = jobSkill.name;
+        item["job_weight"] = roundTo3(baseJobWeight);
+        item["idf_weight"] = roundTo3(idfWeight);
+        item["adjusted_job_weight"] = roundTo3(adjustedJobWeight);
+        item["mandatory"] = jobSkill.mandatory;
+
+        const auto it = majorSkills.find(key);
+        if (it == majorSkills.end()) {
+            if (jobSkill.mandatory) {
+                ++missingMandatoryCount;
+            }
+            missingSkills.append(item);
+            continue;
+        }
+
+        const auto majorWeight = std::max(0.001, it->second.weight);
+        const double adjustedMajorWeight = majorWeight * idfWeight;
+        const double coveredWeight = std::min(adjustedJobWeight, adjustedMajorWeight);
+        matchedWeight += coveredWeight;
+
+        item["major_weight"] = roundTo3(majorWeight);
+        item["adjusted_major_weight"] = roundTo3(adjustedMajorWeight);
+        item["covered_weight"] = roundTo3(coveredWeight);
+        matchedSkills.append(item);
+    }
+
+    if (totalWeight <= 0.0) {
+        return 0.0;
+    }
+    return clampValue((matchedWeight / totalWeight) * 100.0, 0.0, 100.0);
+}
+
 MatchComputationResult computeBaselineMatch(const drogon::orm::DbClientPtr &db,
                                             long long studentId,
                                             long long jobId,
@@ -1469,6 +1628,7 @@ MatchComputationResult computeBaselineMatch(const drogon::orm::DbClientPtr &db,
     result.studentId = studentId;
     result.jobId = jobId;
     result.algorithmVersion = normalizeAlgorithmVersion(algorithmVersionRaw);
+    const auto algorithmProfile = resolveAlgorithmProfile(result.algorithmVersion);
 
     try {
         const auto studentResult = db->execSqlSync(
@@ -1543,7 +1703,7 @@ MatchComputationResult computeBaselineMatch(const drogon::orm::DbClientPtr &db,
 
         const auto majorTokens = buildTokenSet(majorText);
         const auto jobTokens = buildTokenSet(jobText);
-        result.semanticScore = roundTo3(jaccardScore(majorTokens, jobTokens) * 100.0);
+        result.semanticScore = roundTo3(computeSemanticScore(majorTokens, jobTokens, algorithmProfile));
 
         const auto dictionary = loadSkillDictionary(db);
         const auto majorSkillsRaw = loadMajorSkills(db, result.majorId);
@@ -1553,32 +1713,27 @@ MatchComputationResult computeBaselineMatch(const drogon::orm::DbClientPtr &db,
 
         const auto inferredMajorSkills = inferSkillMapFromText(dictionary, majorText);
         const auto inferredJobSkills = inferSkillMapFromText(dictionary, jobText);
-        if (majorSkills.empty()) {
-            majorSkills = inferredMajorSkills;
-        } else {
-            for (const auto &[key, skill] : inferredMajorSkills) {
-                if (majorSkills.find(key) == majorSkills.end()) {
-                    majorSkills.emplace(key, skill);
-                }
-            }
-        }
-        if (jobSkills.empty()) {
-            jobSkills = inferredJobSkills;
-        } else {
-            for (const auto &[key, skill] : inferredJobSkills) {
-                if (jobSkills.find(key) == jobSkills.end()) {
-                    jobSkills.emplace(key, skill);
-                }
-            }
-        }
+        mergeInferredSkills(majorSkills, inferredMajorSkills);
+        mergeInferredSkills(jobSkills, inferredJobSkills);
 
         int missingMandatoryCount = 0;
-        result.skillScore = roundTo3(computeSkillScore(
-            majorSkills,
-            jobSkills,
-            result.matchedSkills,
-            result.missingSkills,
-            missingMandatoryCount));
+        if (algorithmProfile == MatchAlgorithmProfile::HybridIdf) {
+            const auto skillIdfWeights = loadSkillIdfWeights(db);
+            result.skillScore = roundTo3(computeSkillScoreWithIdf(
+                majorSkills,
+                jobSkills,
+                skillIdfWeights,
+                result.matchedSkills,
+                result.missingSkills,
+                missingMandatoryCount));
+        } else {
+            result.skillScore = roundTo3(computeSkillScore(
+                majorSkills,
+                jobSkills,
+                result.matchedSkills,
+                result.missingSkills,
+                missingMandatoryCount));
+        }
         if (jobSkills.empty()) {
             result.skillScore = result.semanticScore;
         }
@@ -1624,7 +1779,9 @@ MatchComputationResult computeBaselineMatch(const drogon::orm::DbClientPtr &db,
         }
         result.constraintScore = roundTo3(clampValue(result.constraintScore, 0.0, 1.0));
 
-        const double fused = 0.55 * result.semanticScore + 0.45 * result.skillScore;
+        const double semanticWeight = algorithmProfile == MatchAlgorithmProfile::HybridIdf ? 0.60 : 0.55;
+        const double skillWeight = 1.0 - semanticWeight;
+        const double fused = semanticWeight * result.semanticScore + skillWeight * result.skillScore;
         result.finalScore = roundTo3(clampValue(fused * result.constraintScore, 0.0, 100.0));
         result.status = drogon::k200OK;
         result.ok = true;
@@ -1646,6 +1803,7 @@ MatchComputationResult computeMajorJobMatch(const drogon::orm::DbClientPtr &db,
     result.majorId = majorId;
     result.jobId = jobId;
     result.algorithmVersion = normalizeAlgorithmVersion(algorithmVersionRaw);
+    const auto algorithmProfile = resolveAlgorithmProfile(result.algorithmVersion);
 
     try {
         const auto majorResult = db->execSqlSync(
@@ -1707,7 +1865,7 @@ MatchComputationResult computeMajorJobMatch(const drogon::orm::DbClientPtr &db,
 
         const auto majorTokens = buildTokenSet(majorText);
         const auto jobTokens = buildTokenSet(jobText);
-        result.semanticScore = roundTo3(jaccardScore(majorTokens, jobTokens) * 100.0);
+        result.semanticScore = roundTo3(computeSemanticScore(majorTokens, jobTokens, algorithmProfile));
 
         const auto dictionary = loadSkillDictionary(db);
         const auto majorSkillsRaw = loadMajorSkills(db, majorId);
@@ -1717,32 +1875,27 @@ MatchComputationResult computeMajorJobMatch(const drogon::orm::DbClientPtr &db,
 
         const auto inferredMajorSkills = inferSkillMapFromText(dictionary, majorText);
         const auto inferredJobSkills = inferSkillMapFromText(dictionary, jobText);
-        if (majorSkills.empty()) {
-            majorSkills = inferredMajorSkills;
-        } else {
-            for (const auto &[key, skill] : inferredMajorSkills) {
-                if (majorSkills.find(key) == majorSkills.end()) {
-                    majorSkills.emplace(key, skill);
-                }
-            }
-        }
-        if (jobSkills.empty()) {
-            jobSkills = inferredJobSkills;
-        } else {
-            for (const auto &[key, skill] : inferredJobSkills) {
-                if (jobSkills.find(key) == jobSkills.end()) {
-                    jobSkills.emplace(key, skill);
-                }
-            }
-        }
+        mergeInferredSkills(majorSkills, inferredMajorSkills);
+        mergeInferredSkills(jobSkills, inferredJobSkills);
 
         int missingMandatoryCount = 0;
-        result.skillScore = roundTo3(computeSkillScore(
-            majorSkills,
-            jobSkills,
-            result.matchedSkills,
-            result.missingSkills,
-            missingMandatoryCount));
+        if (algorithmProfile == MatchAlgorithmProfile::HybridIdf) {
+            const auto skillIdfWeights = loadSkillIdfWeights(db);
+            result.skillScore = roundTo3(computeSkillScoreWithIdf(
+                majorSkills,
+                jobSkills,
+                skillIdfWeights,
+                result.matchedSkills,
+                result.missingSkills,
+                missingMandatoryCount));
+        } else {
+            result.skillScore = roundTo3(computeSkillScore(
+                majorSkills,
+                jobSkills,
+                result.matchedSkills,
+                result.missingSkills,
+                missingMandatoryCount));
+        }
         if (jobSkills.empty()) {
             result.skillScore = result.semanticScore;
         }
@@ -1765,7 +1918,9 @@ MatchComputationResult computeMajorJobMatch(const drogon::orm::DbClientPtr &db,
         }
         result.constraintScore = roundTo3(clampValue(result.constraintScore, 0.0, 1.0));
 
-        const double fused = 0.55 * result.semanticScore + 0.45 * result.skillScore;
+        const double semanticWeight = algorithmProfile == MatchAlgorithmProfile::HybridIdf ? 0.60 : 0.55;
+        const double skillWeight = 1.0 - semanticWeight;
+        const double fused = semanticWeight * result.semanticScore + skillWeight * result.skillScore;
         result.finalScore = roundTo3(clampValue(fused * result.constraintScore, 0.0, 100.0));
         result.status = drogon::k200OK;
         result.ok = true;
