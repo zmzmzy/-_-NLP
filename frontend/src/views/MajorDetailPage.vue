@@ -306,7 +306,11 @@
           <div class="grid">
             <label>
               匹配算法版本
-              <input v-model.trim="matchControl.algorithm_version" placeholder="如 v0.4-major-student" />
+              <select v-model="matchControl.algorithm_version">
+                <option v-for="opt in algorithmVersionOptions" :key="`major-detail-alg-${opt.value}`" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
             </label>
           </div>
           <div class="actions">
@@ -356,6 +360,11 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../services/api";
+import {
+  DEFAULT_STUDENT_JOB_ALGORITHM,
+  MATCH_ALGORITHM_OPTIONS,
+  normalizeMatchAlgorithmVersion
+} from "../constants/matchAlgorithmVersions";
 
 const route = useRoute();
 const router = useRouter();
@@ -403,8 +412,9 @@ const employmentForm = reactive({
 });
 
 const matchControl = reactive({
-  algorithm_version: "v0.4-major-student"
+  algorithm_version: DEFAULT_STUDENT_JOB_ALGORITHM
 });
+const algorithmVersionOptions = MATCH_ALGORITHM_OPTIONS;
 
 const selectedStudentEmployments = computed(() => {
   if (!selectedStudent.value?.id) {
@@ -609,7 +619,10 @@ async function runSingleMatch(studentId, jobId, showSuccess = false) {
     const resp = await api.post("/match/single", {
       student_id: studentId,
       job_id: jobId,
-      algorithm_version: matchControl.algorithm_version || "v0.4-major-student",
+      algorithm_version: normalizeMatchAlgorithmVersion(
+        matchControl.algorithm_version,
+        DEFAULT_STUDENT_JOB_ALGORITHM
+      ),
       persist: true
     });
     if (showSuccess) {
@@ -684,7 +697,10 @@ async function recomputeMajorMatches() {
   loading.value = true;
   try {
     const resp = await api.post(`/match/major/${majorId}/recompute`, {
-      algorithm_version: matchControl.algorithm_version || "v0.4-major-student",
+      algorithm_version: normalizeMatchAlgorithmVersion(
+        matchControl.algorithm_version,
+        DEFAULT_STUDENT_JOB_ALGORITHM
+      ),
       persist: true
     });
     recomputeSummary.value = resp?.data?.summary || null;

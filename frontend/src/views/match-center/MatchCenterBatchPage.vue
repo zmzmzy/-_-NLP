@@ -33,7 +33,9 @@
           </label>
           <label>
             算法版本
-            <input v-model.trim="form.algorithm_version" placeholder="如 v0.4-major-student" />
+            <select v-model="form.algorithm_version">
+              <option v-for="opt in algorithmVersionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
           </label>
           <label>
             最大处理条数
@@ -134,6 +136,11 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import api from "../../services/api";
+import {
+  DEFAULT_STUDENT_JOB_ALGORITHM,
+  MATCH_ALGORITHM_OPTIONS,
+  normalizeMatchAlgorithmVersion
+} from "../../constants/matchAlgorithmVersions";
 
 const majors = ref([]);
 const colleges = ref([]);
@@ -141,6 +148,7 @@ const colleges = ref([]);
 const loading = ref(false);
 const errorText = ref("");
 const successText = ref("");
+const algorithmVersionOptions = MATCH_ALGORITHM_OPTIONS;
 
 const rows = ref([]);
 const failedRows = ref([]);
@@ -150,7 +158,7 @@ const form = reactive({
   scope: "major",
   major_id: 0,
   college_id: 0,
-  algorithm_version: "v0.4-major-student",
+  algorithm_version: DEFAULT_STUDENT_JOB_ALGORITHM,
   persist: true,
   max_pairs: 20000
 });
@@ -172,7 +180,7 @@ function resetForm() {
   form.scope = "major";
   form.major_id = 0;
   form.college_id = 0;
-  form.algorithm_version = "v0.4-major-student";
+  form.algorithm_version = DEFAULT_STUDENT_JOB_ALGORITHM;
   form.persist = true;
   form.max_pairs = 20000;
   rows.value = [];
@@ -211,7 +219,7 @@ async function runEmploymentRecompute() {
   loading.value = true;
   try {
     const payload = {
-      algorithm_version: form.algorithm_version || "v0.4-major-student",
+      algorithm_version: normalizeMatchAlgorithmVersion(form.algorithm_version, DEFAULT_STUDENT_JOB_ALGORITHM),
       persist: !!form.persist,
       max_pairs: Math.max(1, Math.min(50000, Number(form.max_pairs || 20000)))
     };
@@ -246,6 +254,7 @@ onMounted(async () => {
   display: grid;
   gap: 12px;
   grid-template-columns: 0.9fr 1.1fr;
+  align-items: start;
 }
 
 .form-panel {

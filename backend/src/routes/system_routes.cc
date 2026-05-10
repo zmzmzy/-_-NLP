@@ -193,6 +193,7 @@ bool sendMailBySmtp(const SmtpConfig &cfg,
                           " --mail-rcpt " + shellEscape("<" + toEmail + ">") +
                           " --upload-file " + shellEscape(payloadPath.string()) +
                           " --netrc-file " + shellEscape(netrcPath.string()) +
+                          " --noproxy " + shellEscape("*") +
                           " --connect-timeout " + std::to_string(std::max(1L, cfg.timeoutMs / 1000)) +
                           " --max-time " + std::to_string(std::max(1L, cfg.timeoutMs / 1000));
     if (cfg.authMode == "login") {

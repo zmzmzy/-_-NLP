@@ -22,11 +22,6 @@
           </span>
         </router-link>
       </nav>
-
-      <div class="jc-tip">
-        <p>结构建议</p>
-        <p class="hint">总览 + 实体列表 + 导入中心，降低页面耦合度。</p>
-      </div>
     </aside>
 
     <div class="jc-content">
@@ -168,18 +163,6 @@ const currentMeta = computed(() => metaMap[String(route.name || "")] || metaMap[
 .jc-label-en {
   font-size: 11px;
   opacity: 0.72;
-}
-
-.jc-tip {
-  margin-top: auto;
-  border: 1px solid rgba(173, 211, 255, 0.2);
-  border-radius: 14px;
-  padding: 10px;
-  background: rgba(5, 18, 35, 0.28);
-}
-
-.jc-tip p {
-  margin: 0;
 }
 
 .jc-content {

@@ -22,7 +22,9 @@
           </label>
           <label>
             算法版本
-            <input v-model.trim="form.algorithm_version" placeholder="如 v0.2-major-job" />
+            <select v-model="form.algorithm_version">
+              <option v-for="opt in algorithmVersionOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
           </label>
           <label>
             结果持久化
@@ -120,6 +122,11 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import api from "../../services/api";
+import {
+  DEFAULT_MAJOR_JOB_ALGORITHM,
+  MATCH_ALGORITHM_OPTIONS,
+  normalizeMatchAlgorithmVersion
+} from "../../constants/matchAlgorithmVersions";
 
 const majors = ref([]);
 const jobs = ref([]);
@@ -127,6 +134,7 @@ const jobs = ref([]);
 const loading = ref(false);
 const errorText = ref("");
 const successText = ref("");
+const algorithmVersionOptions = MATCH_ALGORITHM_OPTIONS;
 
 const rows = ref([]);
 const failedRows = ref([]);
@@ -139,7 +147,7 @@ const summary = reactive({
 const form = reactive({
   major_id: 0,
   job_ids_text: "",
-  algorithm_version: "v0.2-major-job",
+  algorithm_version: DEFAULT_MAJOR_JOB_ALGORITHM,
   persist: true
 });
 
@@ -185,7 +193,7 @@ function parseIdList(text) {
 function resetForm() {
   form.major_id = 0;
   form.job_ids_text = "";
-  form.algorithm_version = "v0.2-major-job";
+  form.algorithm_version = DEFAULT_MAJOR_JOB_ALGORITHM;
   form.persist = true;
   rows.value = [];
   failedRows.value = [];
@@ -223,7 +231,7 @@ async function runBatchMatch() {
     const payload = {
       major_ids: [Number(form.major_id)],
       job_ids: jobIds,
-      algorithm_version: form.algorithm_version || "v0.2-major-job",
+      algorithm_version: normalizeMatchAlgorithmVersion(form.algorithm_version, DEFAULT_MAJOR_JOB_ALGORITHM),
       persist: !!form.persist
     };
     const resp = await api.post("/match/major-job/batch", payload);
@@ -261,6 +269,7 @@ onMounted(async () => {
   display: grid;
   gap: 12px;
   grid-template-columns: 0.84fr 1.16fr;
+  align-items: start;
 }
 
 .form-panel {

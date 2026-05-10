@@ -22,11 +22,6 @@
           </span>
         </router-link>
       </nav>
-
-      <div class="dbc-tip">
-        <p>结构建议</p>
-        <p class="hint">保持单页单任务：筛选、排名、缺口、AI 解读、记录独立维护。</p>
-      </div>
     </aside>
 
     <div class="dbc-content">
@@ -38,7 +33,6 @@
             <p class="desc">{{ currentMeta.desc }}</p>
           </div>
           <div class="actions">
-            <router-link class="dbc-link-btn secondary" :to="{ name: 'dashboard-legacy' }">旧版看板</router-link>
             <router-link class="dbc-link-btn" :to="{ name: 'dashboard-center-overview' }">返回总览</router-link>
           </div>
         </div>
@@ -175,18 +169,6 @@ const currentMeta = computed(() => metaMap[String(route.name || "")] || metaMap[
   opacity: 0.72;
 }
 
-.dbc-tip {
-  margin-top: auto;
-  border: 1px solid rgba(173, 211, 255, 0.2);
-  border-radius: 14px;
-  padding: 10px;
-  background: rgba(5, 18, 35, 0.28);
-}
-
-.dbc-tip p {
-  margin: 0;
-}
-
 .dbc-content {
   display: grid;
   gap: 12px;
@@ -230,11 +212,6 @@ const currentMeta = computed(() => metaMap[String(route.name || "")] || metaMap[
   text-decoration: none;
   padding: 8px 12px;
   transition: all 0.2s ease;
-}
-
-.dbc-link-btn.secondary {
-  border-color: rgba(147, 197, 253, 0.34);
-  background: rgba(255, 255, 255, 0.11);
 }
 
 .dbc-link-btn:hover {

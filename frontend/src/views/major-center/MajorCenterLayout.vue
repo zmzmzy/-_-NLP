@@ -22,11 +22,6 @@
           </span>
         </router-link>
       </nav>
-
-      <div class="mc-tip">
-        <p>结构建议</p>
-        <p class="hint">总览 + 列表 + 详情 + 导入中心，避免单页堆砌。</p>
-      </div>
     </aside>
 
     <div class="mc-content">
@@ -173,18 +168,6 @@ const currentMeta = computed(() => metaMap[String(route.name || "")] || metaMap[
 .mc-label-en {
   font-size: 11px;
   opacity: 0.72;
-}
-
-.mc-tip {
-  margin-top: auto;
-  border: 1px solid rgba(173, 211, 255, 0.2);
-  border-radius: 14px;
-  padding: 10px;
-  background: rgba(5, 18, 35, 0.28);
-}
-
-.mc-tip p {
-  margin: 0;
 }
 
 .mc-content {

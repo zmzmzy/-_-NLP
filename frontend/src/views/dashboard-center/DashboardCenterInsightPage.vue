@@ -66,7 +66,15 @@
 
         <label>
           算法版本（可选）
-          <input v-model.trim="form.algorithm_version" placeholder="如 v0.4-major-student" />
+          <select v-model="form.algorithm_version">
+            <option
+              v-for="option in MATCH_ALGORITHM_FILTER_OPTIONS"
+              :key="`insight-alg-${option.value || 'latest'}`"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </label>
       </div>
 
@@ -188,6 +196,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import api from "../../services/api";
+import {
+  MATCH_ALGORITHM_FILTER_OPTIONS,
+  normalizeMatchAlgorithmVersion
+} from "../../constants/matchAlgorithmVersions";
 
 const loading = ref(false);
 const errorText = ref("");
@@ -282,8 +294,11 @@ function buildPayload() {
     payload.major_id = Number(form.major_id || 0);
   }
 
-  if (form.algorithm_version.trim().length > 0) {
-    payload.algorithm_version = form.algorithm_version.trim();
+  if (form.algorithm_version) {
+    const normalized = normalizeMatchAlgorithmVersion(form.algorithm_version, "");
+    if (normalized) {
+      payload.algorithm_version = normalized;
+    }
   }
   if (form.custom_prompt.trim().length > 0) {
     payload.custom_prompt = form.custom_prompt.trim();

@@ -43,6 +43,7 @@
 - 默认推荐链路：后端 -> LiteLLM；可选二层编排：后端 -> Dify -> LiteLLM
 - 可参考 `backend/.env.ai.example` 快速配置 `LITELLM_BASE_URL/LITELLM_MASTER_KEY` 等变量
 - LiteLLM 一键脚本见 `tools/ai_stack/README.md`
+- 匹配引擎新增 `v1.1-hybrid-emb`：预训练向量语义与现有规则融合；向量服务不可用时自动回退到非向量语义分
 
 ### 数据库
 
@@ -87,6 +88,25 @@ mysql -uroot -p123456 < db/schema.sql
 cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 < db/defense_showcase_seed_v1.sql
 mysql -uroot -p123456 < db/defense_showcase_verify_v1.sql
+```
+
+方式 D（一键清理并重置数据，推荐答辩前使用）：
+
+```bash
+cd /home/roamer/graduation_proj_0.1
+chmod +x db/reset_data_oneclick.sh
+
+# 答辩数据：清理 -> 导入 -> 验收
+./db/reset_data_oneclick.sh --mode defense --yes
+
+# 备用测试数据：清理 -> 导入 -> 验收
+./db/reset_data_oneclick.sh --mode testdata --yes
+
+# 全库重建：schema -> seed_full -> verify
+./db/reset_data_oneclick.sh --mode full --yes
+
+# 仅清空数据：保留全部表结构
+./db/reset_data_oneclick.sh --mode empty --yes
 ```
 
 ### 3) 一键启动（推荐）

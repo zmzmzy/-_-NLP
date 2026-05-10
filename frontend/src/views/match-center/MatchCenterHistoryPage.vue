@@ -24,7 +24,15 @@
         </label>
         <label>
           算法版本
-          <input v-model.trim="filters.algorithm_version" placeholder="留空表示全部" />
+          <select v-model="filters.algorithm_version">
+            <option
+              v-for="option in MATCH_ALGORITHM_FILTER_OPTIONS"
+              :key="`history-alg-${option.value || 'latest'}`"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </label>
         <label>
           运行模式
@@ -88,6 +96,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
 import api from "../../services/api";
+import {
+  MATCH_ALGORITHM_FILTER_OPTIONS,
+  normalizeMatchAlgorithmVersion
+} from "../../constants/matchAlgorithmVersions";
 
 const majors = ref([]);
 const jobs = ref([]);
@@ -157,8 +169,11 @@ async function loadHistory() {
     if (Number(filters.job_id || 0) > 0) {
       params.job_id = Number(filters.job_id);
     }
-    if (filters.algorithm_version.trim()) {
-      params.algorithm_version = filters.algorithm_version.trim();
+    if (filters.algorithm_version) {
+      const normalized = normalizeMatchAlgorithmVersion(filters.algorithm_version, "");
+      if (normalized) {
+        params.algorithm_version = normalized;
+      }
     }
     if (filters.run_mode.trim()) {
       params.run_mode = filters.run_mode.trim();

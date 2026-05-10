@@ -17,7 +17,7 @@ export NO_PROXY=127.0.0.1,localhost
 1. 初始化数据库（推荐：完整样本一键导入）
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 ./db/load_full_seed.sh
 ```
 
@@ -30,7 +30,7 @@ cd /home/roamer/graduation_proj
 2. 如果只想使用最小样本，可手动执行：
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 < db/schema.sql
 mysql -uroot -p123456 < db/seed_minimal.sql
 ```
@@ -38,7 +38,7 @@ mysql -uroot -p123456 < db/seed_minimal.sql
 3. 编译并启动后端
 
 ```bash
-cd /home/roamer/graduation_proj/backend
+cd /home/roamer/graduation_proj_0.1/backend
 cmake -S . -B build
 cmake --build build -j
 cd build
@@ -48,7 +48,7 @@ cd build
 4. 可选：一键跑本地自动化测试（集成+异常）
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 chmod +x tools/testing/run_local_tests.sh
 ./tools/testing/run_local_tests.sh
 ```
@@ -64,7 +64,7 @@ curl http://127.0.0.1:5555/api/health
 补充（完整样本验收）：
 
 ```bash
-mysql -uroot -p123456 < /home/roamer/graduation_proj/db/verify_full_seed.sql
+mysql -uroot -p123456 < /home/roamer/graduation_proj_0.1/db/verify_full_seed.sql
 ```
 
 关键期望：
@@ -210,7 +210,7 @@ curl -s "http://127.0.0.1:5555/api/match-results?page=1&page_size=10&student_id=
 1. 启动前端
 
 ```bash
-cd /home/roamer/graduation_proj/frontend
+cd /home/roamer/graduation_proj_0.1/frontend
 npm run dev
 ```
 
@@ -296,7 +296,7 @@ curl -s "http://127.0.0.1:5555/api/dashboard/major-skill-gaps?top_n=5&min_gap_co
 如果你是在历史库基础上升级，而不是重新执行 `db/schema.sql`，先执行：
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 graduate_match < db/migrations/v0.2_001_schema_upgrade.sql
 mysql -uroot -p123456 graduate_match < db/migrations/v0.3_001_core_match_results.sql
 mysql -uroot -p123456 graduate_match < db/migrations/v0.3_002_job_import_tables.sql
@@ -312,7 +312,7 @@ mysql -uroot -p123456 graduate_match < db/migrations/v0.5_002_employment_submiss
 可选回滚（谨慎）：
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 graduate_match < db/migrations/v0.2_001_schema_rollback.sql
 ```
 

@@ -1,11 +1,12 @@
 # 备用测试数据包操作手册（v1）
 
-适用项目目录：`/home/roamer/graduation_proj`
+适用项目目录：`/home/roamer/graduation_proj_0.1`
 
 数据包文件：
 
 - 导入：`db/testdata_seed_v1.sql`
 - 清理：`db/testdata_cleanup_v1.sql`
+- 验收：`db/testdata_verify_v1.sql`
 
 ## 1. 数据内容范围
 
@@ -26,7 +27,7 @@
 在项目根目录执行：
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 graduate_match < db/testdata_seed_v1.sql
 ```
 
@@ -45,19 +46,11 @@ mysql -uroot -p123456 graduate_match < db/testdata_seed_v1.sql
 
 ## 4. 导入后验证
 
-执行验证 SQL：
+执行内置验收 SQL（推荐）：
 
 ```bash
-mysql -uroot -p123456 -e "
-USE graduate_match;
-SELECT COUNT(*) AS colleges FROM colleges WHERE code LIKE 'TC%';
-SELECT COUNT(*) AS majors FROM majors m JOIN colleges c ON c.id=m.college_id WHERE c.code LIKE 'TC%';
-SELECT COUNT(*) AS students FROM students WHERE student_no LIKE '2026T%';
-SELECT COUNT(*) AS companies FROM companies WHERE name LIKE '%（测试）';
-SELECT COUNT(*) AS jobs FROM jobs WHERE title LIKE '%（测试）';
-SELECT COUNT(*) AS employments FROM employment_records er JOIN students s ON s.id=er.student_id WHERE s.student_no LIKE '2026T%';
-SELECT username, role, linked_student_id FROM users WHERE username LIKE 'demo_%' ORDER BY username;
-"
+cd /home/roamer/graduation_proj_0.1
+mysql -uroot -p123456 < db/testdata_verify_v1.sql
 ```
 
 预期大致结果：
@@ -83,7 +76,7 @@ SELECT username, role, linked_student_id FROM users WHERE username LIKE 'demo_%'
 如果需要删除这批测试数据：
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 graduate_match < db/testdata_cleanup_v1.sql
 ```
 

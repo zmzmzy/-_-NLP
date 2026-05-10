@@ -10,7 +10,15 @@
       <div class="grid">
         <label>
           算法版本（可选）
-          <input v-model.trim="filters.algorithm_version" placeholder="如 v0.4-major-student" />
+          <select v-model="filters.algorithm_version">
+            <option
+              v-for="option in MATCH_ALGORITHM_FILTER_OPTIONS"
+              :key="`gaps-alg-${option.value || 'latest'}`"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </label>
         <label>
           缺口 Top N（1-20）
@@ -104,6 +112,10 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "../../services/api";
 import { addDashboardHistory } from "../../utils/dashboardHistory";
+import {
+  MATCH_ALGORITHM_FILTER_OPTIONS,
+  normalizeMatchAlgorithmVersion
+} from "../../constants/matchAlgorithmVersions";
 
 const router = useRouter();
 
@@ -182,8 +194,11 @@ function buildParams() {
     top_n: Math.max(1, Math.min(20, Number(filters.top_n || 5))),
     min_gap_count: Math.max(1, Number(filters.min_gap_count || 1))
   };
-  if (filters.algorithm_version.trim()) {
-    params.algorithm_version = filters.algorithm_version.trim();
+  if (filters.algorithm_version) {
+    const normalized = normalizeMatchAlgorithmVersion(filters.algorithm_version, "");
+    if (normalized) {
+      params.algorithm_version = normalized;
+    }
   }
   return params;
 }

@@ -25,14 +25,14 @@
 在项目根目录执行：
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 < db/defense_showcase_seed_v1.sql
 ```
 
 ## 4. 验收步骤
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 < db/defense_showcase_verify_v1.sql
 ```
 
@@ -59,7 +59,7 @@ mysql -uroot -p123456 < db/defense_showcase_verify_v1.sql
 ## 7. 回滚（清理答辩数据）
 
 ```bash
-cd /home/roamer/graduation_proj
+cd /home/roamer/graduation_proj_0.1
 mysql -uroot -p123456 < db/defense_showcase_cleanup_v1.sql
 ```
 

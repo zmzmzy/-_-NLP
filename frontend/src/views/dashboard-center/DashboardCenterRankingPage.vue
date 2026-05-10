@@ -10,7 +10,15 @@
       <div class="grid">
         <label>
           算法版本（可选）
-          <input v-model.trim="filters.algorithm_version" placeholder="如 v0.4-major-student" />
+          <select v-model="filters.algorithm_version">
+            <option
+              v-for="option in MATCH_ALGORITHM_FILTER_OPTIONS"
+              :key="`ranking-alg-${option.value || 'latest'}`"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
         </label>
         <label>
           对口阈值（0-100）
@@ -124,6 +132,10 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "../../services/api";
 import { addDashboardHistory } from "../../utils/dashboardHistory";
+import {
+  MATCH_ALGORITHM_FILTER_OPTIONS,
+  normalizeMatchAlgorithmVersion
+} from "../../constants/matchAlgorithmVersions";
 
 const router = useRouter();
 
@@ -266,8 +278,11 @@ function buildParams() {
     min_students: Number(filters.min_students || 0),
     smoothing_k: Number(filters.smoothing_k || 20)
   };
-  if (filters.algorithm_version.trim()) {
-    params.algorithm_version = filters.algorithm_version.trim();
+  if (filters.algorithm_version) {
+    const normalized = normalizeMatchAlgorithmVersion(filters.algorithm_version, "");
+    if (normalized) {
+      params.algorithm_version = normalized;
+    }
   }
   return params;
 }

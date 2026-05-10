@@ -84,29 +84,6 @@
       </article>
     </div>
 
-    <article class="panel">
-      <div class="section-head">
-        <h3>算法方式建议</h3>
-      </div>
-      <div class="alg-grid">
-        <div class="alg-card">
-          <p class="quick-title">关键词权重</p>
-          <p class="hint">快速粗筛，关注课程技能标签覆盖。</p>
-        </div>
-        <div class="alg-card">
-          <p class="quick-title">语义相似</p>
-          <p class="hint">适合文本长、描述丰富的岗位场景。</p>
-        </div>
-        <div class="alg-card">
-          <p class="quick-title">结构化维度</p>
-          <p class="hint">按课程、能力、平台等维度解释评分。</p>
-        </div>
-        <div class="alg-card">
-          <p class="quick-title">综合融合</p>
-          <p class="hint">适合正式推荐和批量分析结果输出。</p>
-        </div>
-      </div>
-    </article>
   </section>
 </template>
 
@@ -227,8 +204,7 @@ onMounted(loadOverview);
   gap: 10px;
 }
 
-.quick-card,
-.alg-card {
+.quick-card {
   text-decoration: none;
   border: 1px solid rgba(173, 211, 255, 0.24);
   border-radius: 14px;
@@ -249,19 +225,12 @@ onMounted(loadOverview);
   font-weight: 600;
 }
 
-.alg-grid {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
 @media (max-width: 1200px) {
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .overview-grid,
-  .alg-grid {
+  .overview-grid {
     grid-template-columns: 1fr;
   }
 }

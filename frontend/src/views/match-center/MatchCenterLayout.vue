@@ -22,11 +22,6 @@
           </span>
         </router-link>
       </nav>
-
-      <div class="mtc-tip">
-        <p>结构建议</p>
-        <p class="hint">按任务流拆页：单条、多岗位、批量、历史，避免一个超级页面堆叠全部表单。</p>
-      </div>
     </aside>
 
     <div class="mtc-content">
@@ -173,18 +168,6 @@ const currentMeta = computed(() => metaMap[String(route.name || "")] || metaMap[
 .mtc-label-en {
   font-size: 11px;
   opacity: 0.72;
-}
-
-.mtc-tip {
-  margin-top: auto;
-  border: 1px solid rgba(173, 211, 255, 0.2);
-  border-radius: 14px;
-  padding: 10px;
-  background: rgba(5, 18, 35, 0.28);
-}
-
-.mtc-tip p {
-  margin: 0;
 }
 
 .mtc-content {

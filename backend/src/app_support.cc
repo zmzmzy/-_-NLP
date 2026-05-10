@@ -4,11 +4,14 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <deque>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iomanip>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -437,13 +440,22 @@ std::string normalizeAlgorithmVersion(const std::string &raw) {
 
 enum class MatchAlgorithmProfile {
     Baseline,
-    HybridIdf
+    HybridIdf,
+    HybridEmbedding
 };
 
 MatchAlgorithmProfile resolveAlgorithmProfile(const std::string &algorithmVersion) {
     const auto version = toLowerAscii(trimCopy(algorithmVersion));
     if (version.empty()) {
         return MatchAlgorithmProfile::Baseline;
+    }
+    if (version == "v1.1-hybrid-emb" ||
+        version == "v1.2-hybrid-emb" ||
+        version == "hybrid-emb" ||
+        version == "hybrid-embedding" ||
+        version.find("emb") != std::string::npos ||
+        version.find("embedding") != std::string::npos) {
+        return MatchAlgorithmProfile::HybridEmbedding;
     }
     if (version == "v1.0-hybrid-idf" ||
         version == "v1.1-hybrid-idf" ||
@@ -1351,6 +1363,344 @@ Json::Value parseJsonTextOrDefault(const std::string &text, Json::ValueType expe
     return Json::Value(expectedType);
 }
 
+struct EmbeddingRuntimeConfig {
+    bool enabled{false};
+    std::string endpoint;
+    std::string model{"text-embedding-3-small"};
+    std::string apiKey;
+    int timeoutMs{6000};
+    size_t maxTextBytes{2400};
+    size_t cacheMaxEntries{2000};
+};
+
+std::string trimTrailingSlash(const std::string &raw) {
+    auto out = trimCopy(raw);
+    while (out.size() > 1 && out.back() == '/') {
+        out.pop_back();
+    }
+    return out;
+}
+
+bool splitUrlHostPath(const std::string &url,
+                      std::string &host,
+                      std::string &path) {
+    host.clear();
+    path.clear();
+    const auto schemePos = url.find("://");
+    if (schemePos == std::string::npos) {
+        return false;
+    }
+    const auto pathPos = url.find('/', schemePos + 3);
+    if (pathPos == std::string::npos) {
+        host = url;
+        path = "/";
+    } else {
+        host = url.substr(0, pathPos);
+        path = url.substr(pathPos);
+    }
+    return !host.empty() && !path.empty();
+}
+
+std::string reqResultToText(drogon::ReqResult result) {
+    switch (result) {
+        case drogon::ReqResult::Ok:
+            return "ok";
+        case drogon::ReqResult::BadResponse:
+            return "bad_response";
+        case drogon::ReqResult::NetworkFailure:
+            return "network_failure";
+        case drogon::ReqResult::Timeout:
+            return "timeout";
+        case drogon::ReqResult::BadServerAddress:
+            return "bad_server_address";
+        case drogon::ReqResult::HandshakeError:
+            return "tls_handshake_error";
+        case drogon::ReqResult::InvalidCertificate:
+            return "invalid_certificate";
+        case drogon::ReqResult::EncryptionFailure:
+            return "encryption_failure";
+        default:
+            return "unknown";
+    }
+}
+
+EmbeddingRuntimeConfig buildEmbeddingRuntimeConfig() {
+    EmbeddingRuntimeConfig cfg;
+    bool enabled = true;
+    const auto enableRaw = getEnvTrimmed("GM_EMBEDDING_ENABLE");
+    if (!enableRaw.empty()) {
+        bool parsed = true;
+        if (parseBoolLike(enableRaw, parsed)) {
+            enabled = parsed;
+        }
+    }
+    if (!enabled) {
+        return cfg;
+    }
+
+    std::string endpoint = getEnvTrimmed("GM_EMBEDDING_ENDPOINT");
+    if (endpoint.empty()) {
+        std::string baseUrl = getEnvTrimmed("GM_EMBEDDING_BASE_URL");
+        if (baseUrl.empty()) {
+            baseUrl = getEnvTrimmed("LITELLM_BASE_URL");
+        }
+        if (!baseUrl.empty()) {
+            endpoint = trimTrailingSlash(baseUrl) + "/v1/embeddings";
+        }
+    }
+    endpoint = trimCopy(endpoint);
+    if (endpoint.empty()) {
+        return cfg;
+    }
+
+    cfg.endpoint = endpoint;
+    cfg.model = getEnvTrimmed("GM_EMBEDDING_MODEL");
+    if (cfg.model.empty()) {
+        cfg.model = "text-embedding-3-small";
+    }
+
+    cfg.apiKey = getEnvTrimmed("GM_EMBEDDING_API_KEY");
+    if (cfg.apiKey.empty()) {
+        cfg.apiKey = getEnvTrimmed("LITELLM_MASTER_KEY");
+    }
+    if (cfg.apiKey.empty()) {
+        cfg.apiKey = getEnvTrimmed("OPENAI_API_KEY");
+    }
+
+    const auto timeoutRaw = getEnvTrimmed("GM_EMBEDDING_TIMEOUT_MS");
+    if (!timeoutRaw.empty()) {
+        int timeout = cfg.timeoutMs;
+        if (parseStrictInt(timeoutRaw, timeout)) {
+            cfg.timeoutMs = std::max(1000, std::min(timeout, 30000));
+        }
+    }
+
+    const auto maxTextRaw = getEnvTrimmed("GM_EMBEDDING_MAX_TEXT_BYTES");
+    if (!maxTextRaw.empty()) {
+        int maxText = static_cast<int>(cfg.maxTextBytes);
+        if (parseStrictInt(maxTextRaw, maxText)) {
+            cfg.maxTextBytes = static_cast<size_t>(std::max(256, std::min(maxText, 20000)));
+        }
+    }
+
+    const auto cacheRaw = getEnvTrimmed("GM_EMBEDDING_CACHE_SIZE");
+    if (!cacheRaw.empty()) {
+        int cacheSize = static_cast<int>(cfg.cacheMaxEntries);
+        if (parseStrictInt(cacheRaw, cacheSize)) {
+            cfg.cacheMaxEntries = static_cast<size_t>(std::max(100, std::min(cacheSize, 20000)));
+        }
+    }
+
+    cfg.enabled = true;
+    return cfg;
+}
+
+const EmbeddingRuntimeConfig &embeddingRuntimeConfig() {
+    static const EmbeddingRuntimeConfig cfg = buildEmbeddingRuntimeConfig();
+    return cfg;
+}
+
+std::string trimUtf8ByBytes(const std::string &text, size_t maxBytes) {
+    if (text.size() <= maxBytes) {
+        return text;
+    }
+    size_t cursor = 0;
+    while (cursor < text.size()) {
+        const size_t len = utf8CharLen(static_cast<unsigned char>(text[cursor]));
+        if (cursor + len > maxBytes || cursor + len > text.size()) {
+            break;
+        }
+        cursor += len;
+    }
+    return text.substr(0, cursor);
+}
+
+using EmbeddingVector = std::vector<double>;
+
+std::mutex gEmbeddingCacheMutex;
+std::unordered_map<std::string, EmbeddingVector> gEmbeddingCache;
+std::deque<std::string> gEmbeddingCacheOrder;
+
+bool tryGetEmbeddingCache(const std::string &key, EmbeddingVector &valueOut) {
+    std::lock_guard<std::mutex> lock(gEmbeddingCacheMutex);
+    const auto it = gEmbeddingCache.find(key);
+    if (it == gEmbeddingCache.end()) {
+        return false;
+    }
+    valueOut = it->second;
+    return true;
+}
+
+void putEmbeddingCache(const std::string &key,
+                       const EmbeddingVector &value,
+                       size_t cacheMaxEntries) {
+    std::lock_guard<std::mutex> lock(gEmbeddingCacheMutex);
+    if (gEmbeddingCache.find(key) == gEmbeddingCache.end()) {
+        gEmbeddingCacheOrder.push_back(key);
+    }
+    gEmbeddingCache[key] = value;
+
+    while (gEmbeddingCacheOrder.size() > cacheMaxEntries) {
+        const auto &evictKey = gEmbeddingCacheOrder.front();
+        gEmbeddingCache.erase(evictKey);
+        gEmbeddingCacheOrder.pop_front();
+    }
+}
+
+bool parseEmbeddingVectorFromResponse(const Json::Value &body,
+                                      EmbeddingVector &vectorOut) {
+    vectorOut.clear();
+    if (!body.isObject() || !body.isMember("data") || !body["data"].isArray() || body["data"].empty()) {
+        return false;
+    }
+    const auto &first = body["data"][0];
+    if (!first.isObject() || !first.isMember("embedding") || !first["embedding"].isArray()) {
+        return false;
+    }
+    const auto &arr = first["embedding"];
+    vectorOut.reserve(arr.size());
+    for (const auto &v : arr) {
+        if (v.isDouble() || v.isInt() || v.isUInt() || v.isInt64() || v.isUInt64()) {
+            vectorOut.push_back(v.asDouble());
+            continue;
+        }
+        return false;
+    }
+    return !vectorOut.empty();
+}
+
+bool fetchEmbeddingVector(const EmbeddingRuntimeConfig &cfg,
+                          const std::string &text,
+                          EmbeddingVector &vectorOut,
+                          std::string &error) {
+    vectorOut.clear();
+    error.clear();
+    if (!cfg.enabled) {
+        error = "embedding disabled";
+        return false;
+    }
+
+    const auto trimmedText = trimUtf8ByBytes(trimCopy(text), cfg.maxTextBytes);
+    if (trimmedText.empty()) {
+        error = "embedding input text is empty";
+        return false;
+    }
+
+    const auto cacheKey = sha256Hex(trimmedText);
+    if (tryGetEmbeddingCache(cacheKey, vectorOut)) {
+        return true;
+    }
+
+    std::string host;
+    std::string path;
+    if (!splitUrlHostPath(cfg.endpoint, host, path)) {
+        error = "invalid embedding endpoint url";
+        return false;
+    }
+
+    Json::Value reqJson(Json::objectValue);
+    reqJson["model"] = cfg.model;
+    reqJson["input"] = trimmedText;
+
+    auto client = drogon::HttpClient::newHttpClient(host);
+    auto req = drogon::HttpRequest::newHttpRequest();
+    req->setMethod(drogon::Post);
+    req->setPath(path);
+    req->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+    req->setBody(jsonToCompactString(reqJson));
+    if (!cfg.apiKey.empty()) {
+        req->addHeader("Authorization", "Bearer " + cfg.apiKey);
+    }
+
+    struct HttpResult {
+        drogon::ReqResult result{drogon::ReqResult::BadResponse};
+        drogon::HttpResponsePtr resp;
+    };
+    auto promisePtr = std::make_shared<std::promise<HttpResult>>();
+    auto future = promisePtr->get_future();
+
+    const double timeoutSec = static_cast<double>(cfg.timeoutMs) / 1000.0;
+    client->sendRequest(
+        req,
+        [promisePtr](drogon::ReqResult result, const drogon::HttpResponsePtr &resp) {
+            promisePtr->set_value({result, resp});
+        },
+        timeoutSec);
+
+    if (future.wait_for(std::chrono::milliseconds(cfg.timeoutMs + 300)) != std::future_status::ready) {
+        error = "embedding request wait timeout";
+        return false;
+    }
+
+    const auto httpResult = future.get();
+    if (httpResult.result != drogon::ReqResult::Ok || !httpResult.resp) {
+        error = "embedding request failed: " + reqResultToText(httpResult.result);
+        return false;
+    }
+    if (httpResult.resp->statusCode() < drogon::k200OK || httpResult.resp->statusCode() >= drogon::k300MultipleChoices) {
+        error = "embedding endpoint returned status " + std::to_string(static_cast<int>(httpResult.resp->statusCode()));
+        return false;
+    }
+
+    const auto parsedBody = parseJsonTextOrDefault(std::string(httpResult.resp->getBody()), Json::objectValue);
+    if (!parseEmbeddingVectorFromResponse(parsedBody, vectorOut)) {
+        error = "embedding response parse failed";
+        return false;
+    }
+
+    putEmbeddingCache(cacheKey, vectorOut, cfg.cacheMaxEntries);
+    return true;
+}
+
+double cosineSimilarity(const EmbeddingVector &left, const EmbeddingVector &right) {
+    if (left.empty() || right.empty() || left.size() != right.size()) {
+        return 0.0;
+    }
+    double dot = 0.0;
+    double l2Left = 0.0;
+    double l2Right = 0.0;
+    for (size_t i = 0; i < left.size(); ++i) {
+        dot += left[i] * right[i];
+        l2Left += left[i] * left[i];
+        l2Right += right[i] * right[i];
+    }
+    if (l2Left <= 1e-12 || l2Right <= 1e-12) {
+        return 0.0;
+    }
+    return dot / (std::sqrt(l2Left) * std::sqrt(l2Right));
+}
+
+bool computeEmbeddingSemanticScore(const std::string &leftText,
+                                   const std::string &rightText,
+                                   double &scoreOut,
+                                   std::string &error) {
+    scoreOut = 0.0;
+    error.clear();
+
+    const auto &cfg = embeddingRuntimeConfig();
+    if (!cfg.enabled) {
+        error = "embedding runtime not configured";
+        return false;
+    }
+
+    EmbeddingVector leftVec;
+    EmbeddingVector rightVec;
+    std::string leftError;
+    std::string rightError;
+    if (!fetchEmbeddingVector(cfg, leftText, leftVec, leftError)) {
+        error = leftError;
+        return false;
+    }
+    if (!fetchEmbeddingVector(cfg, rightText, rightVec, rightError)) {
+        error = rightError;
+        return false;
+    }
+
+    const double cosine = clampValue(cosineSimilarity(leftVec, rightVec), -1.0, 1.0);
+    scoreOut = clampValue((cosine + 1.0) * 50.0, 0.0, 100.0);
+    return true;
+}
+
 std::vector<std::string> splitAliases(const std::string &text) {
     std::vector<std::string> parts;
     std::string current;
@@ -1501,7 +1851,8 @@ double computeSemanticScore(const std::unordered_set<std::string> &majorTokens,
                             const std::unordered_set<std::string> &jobTokens,
                             MatchAlgorithmProfile profile) {
     const double jaccard = jaccardScore(majorTokens, jobTokens) * 100.0;
-    if (profile == MatchAlgorithmProfile::HybridIdf) {
+    if (profile == MatchAlgorithmProfile::HybridIdf ||
+        profile == MatchAlgorithmProfile::HybridEmbedding) {
         const double tokenCoverage = coverageScore(majorTokens, jobTokens) * 100.0;
         return clampValue(0.65 * jaccard + 0.35 * tokenCoverage, 0.0, 100.0);
     }
@@ -1704,6 +2055,14 @@ MatchComputationResult computeBaselineMatch(const drogon::orm::DbClientPtr &db,
         const auto majorTokens = buildTokenSet(majorText);
         const auto jobTokens = buildTokenSet(jobText);
         result.semanticScore = roundTo3(computeSemanticScore(majorTokens, jobTokens, algorithmProfile));
+        if (algorithmProfile == MatchAlgorithmProfile::HybridEmbedding) {
+            double embeddingSemanticScore = 0.0;
+            std::string embeddingError;
+            if (computeEmbeddingSemanticScore(majorText, jobText, embeddingSemanticScore, embeddingError)) {
+                const double fusedSemantic = 0.45 * result.semanticScore + 0.55 * embeddingSemanticScore;
+                result.semanticScore = roundTo3(clampValue(fusedSemantic, 0.0, 100.0));
+            }
+        }
 
         const auto dictionary = loadSkillDictionary(db);
         const auto majorSkillsRaw = loadMajorSkills(db, result.majorId);
@@ -1717,7 +2076,8 @@ MatchComputationResult computeBaselineMatch(const drogon::orm::DbClientPtr &db,
         mergeInferredSkills(jobSkills, inferredJobSkills);
 
         int missingMandatoryCount = 0;
-        if (algorithmProfile == MatchAlgorithmProfile::HybridIdf) {
+        if (algorithmProfile == MatchAlgorithmProfile::HybridIdf ||
+            algorithmProfile == MatchAlgorithmProfile::HybridEmbedding) {
             const auto skillIdfWeights = loadSkillIdfWeights(db);
             result.skillScore = roundTo3(computeSkillScoreWithIdf(
                 majorSkills,
@@ -1779,7 +2139,11 @@ MatchComputationResult computeBaselineMatch(const drogon::orm::DbClientPtr &db,
         }
         result.constraintScore = roundTo3(clampValue(result.constraintScore, 0.0, 1.0));
 
-        const double semanticWeight = algorithmProfile == MatchAlgorithmProfile::HybridIdf ? 0.60 : 0.55;
+        const double semanticWeight =
+            (algorithmProfile == MatchAlgorithmProfile::HybridIdf ||
+             algorithmProfile == MatchAlgorithmProfile::HybridEmbedding)
+                ? 0.60
+                : 0.55;
         const double skillWeight = 1.0 - semanticWeight;
         const double fused = semanticWeight * result.semanticScore + skillWeight * result.skillScore;
         result.finalScore = roundTo3(clampValue(fused * result.constraintScore, 0.0, 100.0));
@@ -1866,6 +2230,14 @@ MatchComputationResult computeMajorJobMatch(const drogon::orm::DbClientPtr &db,
         const auto majorTokens = buildTokenSet(majorText);
         const auto jobTokens = buildTokenSet(jobText);
         result.semanticScore = roundTo3(computeSemanticScore(majorTokens, jobTokens, algorithmProfile));
+        if (algorithmProfile == MatchAlgorithmProfile::HybridEmbedding) {
+            double embeddingSemanticScore = 0.0;
+            std::string embeddingError;
+            if (computeEmbeddingSemanticScore(majorText, jobText, embeddingSemanticScore, embeddingError)) {
+                const double fusedSemantic = 0.45 * result.semanticScore + 0.55 * embeddingSemanticScore;
+                result.semanticScore = roundTo3(clampValue(fusedSemantic, 0.0, 100.0));
+            }
+        }
 
         const auto dictionary = loadSkillDictionary(db);
         const auto majorSkillsRaw = loadMajorSkills(db, majorId);
@@ -1879,7 +2251,8 @@ MatchComputationResult computeMajorJobMatch(const drogon::orm::DbClientPtr &db,
         mergeInferredSkills(jobSkills, inferredJobSkills);
 
         int missingMandatoryCount = 0;
-        if (algorithmProfile == MatchAlgorithmProfile::HybridIdf) {
+        if (algorithmProfile == MatchAlgorithmProfile::HybridIdf ||
+            algorithmProfile == MatchAlgorithmProfile::HybridEmbedding) {
             const auto skillIdfWeights = loadSkillIdfWeights(db);
             result.skillScore = roundTo3(computeSkillScoreWithIdf(
                 majorSkills,
@@ -1918,7 +2291,11 @@ MatchComputationResult computeMajorJobMatch(const drogon::orm::DbClientPtr &db,
         }
         result.constraintScore = roundTo3(clampValue(result.constraintScore, 0.0, 1.0));
 
-        const double semanticWeight = algorithmProfile == MatchAlgorithmProfile::HybridIdf ? 0.60 : 0.55;
+        const double semanticWeight =
+            (algorithmProfile == MatchAlgorithmProfile::HybridIdf ||
+             algorithmProfile == MatchAlgorithmProfile::HybridEmbedding)
+                ? 0.60
+                : 0.55;
         const double skillWeight = 1.0 - semanticWeight;
         const double fused = semanticWeight * result.semanticScore + skillWeight * result.skillScore;
         result.finalScore = roundTo3(clampValue(fused * result.constraintScore, 0.0, 100.0));

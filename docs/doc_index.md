@@ -23,6 +23,8 @@
 18. `docs/db_replan_v0.3.md`：看数据库分层收敛方案（Core / Extension / Ops）。
 19. `docs/decision_board_ai_agent.md`：决策看板 AI 解读（LiteLLM 主链路 + Dify 编排）交付说明。
 20. `docs/integrations/dify_dashboard_workflow.md`：Dify 工作流接入模板与输出规范。
+21. `docs/ml_embedding_upgrade_readme.md`：轻量机器学习融合改造说明（实现清单、配置、论文增补与答辩问答）。
+22. `docs/student_seed_import_manual_v1.md`：学生批量生成与自动化导入手册（6-12人/专业，学号规则与回滚）。
 
 ## 完成度快照（便于复盘）
 
